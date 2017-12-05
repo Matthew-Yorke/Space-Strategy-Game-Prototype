@@ -12,7 +12,7 @@
 //*************************************************************************************************
 
 #include "stdio.h"
-#include "allegro5\allegro.h"
+#include "allegro5/allegro.h"
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
@@ -87,6 +87,7 @@ bool Game::Initialize()
    if (!al_install_audio()) {
       al_show_native_message_box(mpDisplay, "Error", "Error: audio", "Failed to initialize the audio addon!",
                                  NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
       return false;
    }
 
@@ -94,6 +95,7 @@ bool Game::Initialize()
    if (!al_init_acodec_addon()) {
       al_show_native_message_box(mpDisplay, "Error", "Error: acodec", "Failed to initialize the acodec addon!",
                                  NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
       return false;
    }
 
@@ -101,6 +103,26 @@ bool Game::Initialize()
    if (!al_reserve_samples(5)) {
       al_show_native_message_box(mpDisplay, "Error", "Error: reserve samples", "Failed to reserve samples!",
                                  NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
+      return false;
+   }
+
+   // Install the keyboard for allegro and catch if a failure occurrs.
+   if (!al_install_keyboard())
+   {
+      al_show_native_message_box(mpDisplay, "Error", "Error: install keyboard", "Failed to install the keyboard component!",
+                                 NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
+      return false;
+   }
+
+   // Setup the event_queue and catch if a failure occurs.
+   mpEventQueue = al_create_event_queue();
+   if (!mpEventQueue) {
+      al_show_native_message_box(mpDisplay, "Error", "Error: al_create_event_queue", "Failed to initialize al_create_event_queue!",
+                                 NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
+      al_destroy_timer(mpTimer);
       return false;
    }
 
@@ -110,12 +132,12 @@ bool Game::Initialize()
    // Register types of events the event_queue will handle.
    // Note: Something went wrong here and caused the program to crash, will need to investigate and compare
    //       to the asteroids game.
-   //al_register_event_source(mpEventQueue, al_get_display_event_source(mpDisplay));
-   //al_register_event_source(mpEventQueue, al_get_keyboard_event_source());
-   //al_register_event_source(mpEventQueue, al_get_timer_event_source(mpTimer));
+   al_register_event_source(mpEventQueue, al_get_display_event_source(mpDisplay));
+   al_register_event_source(mpEventQueue, al_get_keyboard_event_source());
+   al_register_event_source(mpEventQueue, al_get_timer_event_source(mpTimer));
 
    // Start the timer event.
-   //al_start_timer(mpTimer);
+   al_start_timer(mpTimer);
 
    // No failures occurred during initialization.
    return true;
@@ -137,8 +159,8 @@ void Game::GameLoop()
    // Note: This is purely to test the map file for loading and drawing the map that is currently loaded.
    BattleMap bm;
    bm.LoadMap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/BattleMaps/PrototypeBattleMap.txt");
-   bm.DrawBattleMap(mpDisplay);
-   al_flip_display();
+   Ship* StarterShip = new Ship(false, 3, 2, 1, 1);
+   bm.AddPlayerShip(StarterShip);
 
    // Continously loop until the game is exited.
    while (mIsGameDone == false)
@@ -160,12 +182,23 @@ void Game::GameLoop()
          {
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_W)
             {
+               bm.MoveTileSelector(OverallProjectConstants::Direction::UP);
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_A)
             {
+               bm.MoveTileSelector(OverallProjectConstants::Direction::LEFT);
+            }
+            if (nextEvent.keyboard.keycode == ALLEGRO_KEY_S)
+            {
+               bm.MoveTileSelector(OverallProjectConstants::Direction::DOWN);
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_D)
             {
+               bm.MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
+            }
+            if (nextEvent.keyboard.keycode == ALLEGRO_KEY_SPACE)
+            {
+               bm.MoveShipToSelectedTile();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
             {
@@ -180,6 +213,9 @@ void Game::GameLoop()
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_A)
             {
             }
+            if (nextEvent.keyboard.keycode == ALLEGRO_KEY_S)
+            {
+            }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_D)
             {
             }
@@ -190,7 +226,10 @@ void Game::GameLoop()
             // The timer event was from the FPS timer.
             // Note: This will occurr ever 1/60th a second.
             if (nextEvent.timer.source == mpTimer)
-            {
+            { 
+               bm.CalculateShipsMoveableArea();
+               bm.Draw();
+               al_flip_display();
             }
          }
       }

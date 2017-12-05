@@ -6,6 +6,14 @@
 #include <allegro5/allegro_native_dialog.h>
 #include "Game.h"
 
+//*******************************************************************************************
+//
+// Method Name: main
+//
+// Description:
+//  TODO: Add method description.
+//
+//*******************************************************************************************
 int main()
 {
    bool succesfulInitalization = false;

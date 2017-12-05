@@ -1,4 +1,4 @@
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 //
 // File Name: BattleMap.cpp
 //
@@ -7,12 +7,13 @@
 //
 // Change History:
 //  Author               Date           Description
-//  Matthew D. Yorke     MM/DD/YYYY     TODO: Add history update
+//  Matthew D. Yorke     12/04/2017     Initial implementation for the battle map class. Added in loading battle map information, drawing a
+//                                      portion of the graphics, and movement inital movement selection of a ship.
 //
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 
 #include "stdio.h"
-#include "allegro5\allegro.h"
+#include "allegro5/allegro.h"
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
@@ -21,83 +22,103 @@
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
 #include "BattleMap.h"
+#include "BattleMapConstants.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
-//*************************************************************************************************
-//                                  Start Public Method Definitions
-//*************************************************************************************************
+//***************************************************************************************************************************************************
+//                                                         Start Public Method Definitions
+//***************************************************************************************************************************************************
 
-//*******************************************************************************************
+//***************************************************************************************************************************************************
 //
 // Method Name: BattleMap
 //
 // Description:
-//  TODO: Add method description.
+//  Set the member variables for this class to default values.
 //
-//*******************************************************************************************
+//***************************************************************************************************************************************************
 BattleMap::BattleMap()
 {
-   mNumberOfTileRows = 0;
+   // Set the default number of tile columns and rows in the map.
    mNumberOfTileColumns = 0;
+   mNumberOfTileRows = 0;
+
+   // Set the default column and row the tile selector is located at.
+   mTileSelectorRow = 0;
+   mTileSelectorColumn = 0;
+
+   // Set the default current ship that is in its action turn.
+   mpCurrentShipsActionTurn = nullptr;
 }
 
-//*******************************************************************************************
+//***************************************************************************************************************************************************
 //
-// Method Name: Initialize
-//
-// Description:
-//  TODO: Add method description.
-//
-//*******************************************************************************************
-bool BattleMap::Initialize()
-{
-   // No failures occurred during initialization.
-   return true;
-}
-
-//*******************************************************************************************
-//
-// Method Name: Terminate
+// Method Name: ~BattleMap
 //
 // Description:
-//  TODO: Add method description.
+//  Clean up any allocated memory.
 //
-//*******************************************************************************************
-void BattleMap::Terminate()
+//***************************************************************************************************************************************************
+BattleMap::~BattleMap()
 {
-   // Delete any previously allocated array.
-   // Note: is this needed here or possibly just in the destructor of this class?
-   for (int i = 0; i < mNumberOfTileRows; i++)
+   // Clean up any allocated memory in the Battle Map container.
+   for (int currentTileRow = 0;
+      currentTileRow < mNumberOfTileRows;
+      currentTileRow++)
    {
-      delete[] mpBattleMapArray[i];
+      delete[] mpBattleMapArray[currentTileRow];
+      mpBattleMapArray[currentTileRow] = nullptr;
    }
    delete[] mpBattleMapArray;
+   mpBattleMapArray = nullptr;
+
+   // Clean up any allocated memory in the Player Ship container.
+   while (mpPlayerShips.empty() == false)
+   {
+      delete mpPlayerShips.back();
+      mpPlayerShips.pop_back();
+   }
+
+   // Clean up any allocated memory in the Enemy Ship container.
+   while (mpEnemyShips.empty() == false)
+   {
+      delete mpEnemyShips.back();
+      mpEnemyShips.pop_back();
+   }
 }
 
-//*******************************************************************************************
+//***************************************************************************************************************************************************
 //
 // Method Name: LoadMap
 //
 // Description:
-//  TODO: Add method description.
+//  Read the file at the location indicated by the passed in string and retrieve information by line:
+//     Line 0: The number of columns and rows in the battle map.
+//     Lines 1 - EOF: The battle map array that includes tile information and location.
 //
-//*******************************************************************************************
-void BattleMap::LoadMap(std::string battleMapFileName)
+//***************************************************************************************************************************************************
+void BattleMap::LoadMap(std::string theBattleMapFileName)
 {
-   // Delete any previously allocated array.
-   for (int i = 0; i < mNumberOfTileRows; i++)
+   // Delete any previously allocated memory in the battle map array.
+   for (int currentTileRow = 0;
+        currentTileRow < mNumberOfTileRows;
+        currentTileRow++)
    {
-      delete[] mpBattleMapArray[i];
+      delete[] mpBattleMapArray[currentTileRow];
    }
    delete[] mpBattleMapArray;
+ 
+   // Holds the string line that is currently be read in the file.
+   std::string currentFileLineString(OverallProjectConstants::EMPTY_STRING);
 
-   std::string currentFileLineString("");
-   int LineNumber = 0;
+   // The line number that is currently being read.
+   int currentLineNumber = 0;
 
+   // Open the file by the string that is passed in this function.
    std::ifstream battleMapFile;
-   battleMapFile.open(battleMapFileName);
+   battleMapFile.open(theBattleMapFileName);
 
    // Make sure the file properly opened.
    if (battleMapFile.is_open() == true)
@@ -105,90 +126,481 @@ void BattleMap::LoadMap(std::string battleMapFileName)
       // Exit once the "end of file" is reached.
       while (battleMapFile.eof() == false)
       {
-         std::getline(battleMapFile, currentFileLineString);
+         // Read the next line the file.
+         std::getline(battleMapFile,
+                      currentFileLineString);
+         // Change the string to be an input stream so it can be parsed.
+         std::istringstream stringStream(currentFileLineString);
+         // the string that is parsed by a delimeter.
+         std::string parsedString("");
 
-         if(LineNumber == 0)
+         // Get the metadata about the number of columns and rows in the map.
+         if(currentLineNumber == 0)
          {
-            std::istringstream stringStream(currentFileLineString);
-            std::string ParsedString;
+            // The first parsed string is an integer that represents the number of columns.
+            std::getline(stringStream,
+                         parsedString,
+                         BattleMapConstants::FILE_DELIMITER);
+            mNumberOfTileColumns = stoi(parsedString);
 
-            // Get first number of columns
-            std::getline(stringStream, ParsedString, ',');
-            mNumberOfTileColumns = stoi(ParsedString);
+            // The second parsed string is an integer that represents the number of rows.
+            std::getline(stringStream,
+                         parsedString,
+                         BattleMapConstants::FILE_DELIMITER);
+            mNumberOfTileRows = stoi(parsedString);
 
-            // Get second number in the firs line for the number or row
-            std::getline(stringStream, ParsedString, ',');
-            mNumberOfTileRows = stoi(ParsedString);
-
+            // Create a new array with the column and row sizes for the 2D sizes.
             mpBattleMapArray = new int* [mNumberOfTileRows];
-
-            for (int i = 0; i < mNumberOfTileRows; i++)
-               mpBattleMapArray[i] = new int [mNumberOfTileColumns];
-         }
-         else if ((LineNumber-1) < mNumberOfTileRows)
-         {
-            std::istringstream stringStream(currentFileLineString);
-            std::string ParsedString;
-         
-            for(int i = 0; i < mNumberOfTileColumns; i++)
+            for (int currentTileRow = 0;
+                 currentTileRow < mNumberOfTileRows;
+                 currentTileRow++)
             {
-               std::getline(stringStream, ParsedString, ',');
-               mpBattleMapArray[LineNumber-1][i] = stoi(ParsedString);
+               mpBattleMapArray[currentTileRow] = new int [mNumberOfTileColumns];
             }
          }
-
-         LineNumber++;
+         // Retrieve the map tile information including column and row location and add the data to the battle map container.
+         // The current line being read in the file minues the offset is the current row of the battle map.
+         else if ((currentLineNumber - currentLineNumber) < mNumberOfTileRows)
+         {
+            // For the row iterate through each column in the battle map and transfer the information from the file to the battle map container.
+            for(int currentTileColumn = 0;
+                currentTileColumn < mNumberOfTileColumns;
+                currentTileColumn++)
+            {
+               std::getline(stringStream,
+                            parsedString,
+                            BattleMapConstants::FILE_DELIMITER);
+               mpBattleMapArray[currentLineNumber - currentLineNumber][currentTileColumn] = stoi(parsedString);
+            }
+         }
+         
+         // Indicate that the line is being incremented as the next line is about to be read.
+         currentLineNumber++;
       }
    }
 
+   // Close the battle map file now that reading from it is done.
    battleMapFile.close();
 }
 
-//*******************************************************************************************
+//***************************************************************************************************************************************************
 //
-// Method Name: DrawBattleMap
+// Method Name: AddPlayerShip
 //
 // Description:
-//  TODO: Add method description.
+//  Add the indicated ship from the players list of ships they are controlling in the battle.
 //
-//*******************************************************************************************
-void BattleMap::DrawBattleMap(ALLEGRO_DISPLAY* display)
+//***************************************************************************************************************************************************
+void BattleMap::AddPlayerShip(Ship* thepPlayerShip)
 {
-   // Note: This is just prototyping drawing. Will need to know which tile sheet to load (could be within the map text file) and other
-   //       metadata such as what does 0 mean in the map array. Also a point in the map array could be {x,y} where x determines the row
-   //       and y could determine the coumn to use for the tile sheet. Will also need to protect from the case where a map isn't laoded.
+   // Add the passed in ship to the ships that the player is controlling in this battle.
+   mpPlayerShips.push_back(thepPlayerShip);
+}
 
-   ALLEGRO_BITMAP* tileImage;
-   tileImage = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/SpaceTile.png");
-
-   for(int i = 0; i < mNumberOfTileRows; i++)
+//***************************************************************************************************************************************************
+//
+// Method Name: RemovePlayerShip
+//
+// Description:
+//  Remove the indicated ship from the players list of ships they controlling in the battle.
+//
+//***************************************************************************************************************************************************
+void BattleMap::RemovePlayerShip(Ship* thepPlayerShip)
+{
+   // Try to find the player ship indicated to be removed by searching the ships the player is controlling this battle. If found, remove the ship
+   // from the players list of ships they controlling this battle.
+   auto shipIterator = std::find(mpPlayerShips.begin(),
+                                 mpPlayerShips.end(),
+                                 thepPlayerShip);
+   if (shipIterator != mpPlayerShips.end())
    {
-      for(int j = 0; j < mNumberOfTileColumns; j++)
+      mpPlayerShips.erase(shipIterator);
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: MoveTileSelector
+//
+// Description:
+//  Move where the tile selector will be located and drawn by one tile based on the passed in direction.
+//
+//***************************************************************************************************************************************************
+void BattleMap::MoveTileSelector(OverallProjectConstants::Direction theDirection)
+{
+   // Determine which direction is occurring to process.
+   switch (theDirection)
+   {
+      case OverallProjectConstants::Direction::UP:
       {
-         al_draw_bitmap(tileImage, i*64, j*64, 0);
+         // Decrement the tile selector row to check one tile above the current tile selector location.
+         mTileSelectorRow--;
+
+         // Make sure the tile selector does not go out of bounds of the top of the map.
+         if (mTileSelectorRow < 0)
+         {
+            mTileSelectorRow = 0;
+         }
+
+         // Break at the end end of the case as not to fall through the next case.
+         break;
+      }
+      case OverallProjectConstants::Direction::DOWN:
+      {
+         // Increment the tile selector row to check one tile below the current tile selector location.
+         mTileSelectorRow++;
+
+         // Make sure the tile selector does not go out of bounds of the bottom of the map.
+         if (mTileSelectorRow > mNumberOfTileRows)
+         {
+            mTileSelectorRow = mNumberOfTileRows;
+         }
+   
+         // Break at the end end of the case as not to fall through the next case.
+         break;
+      }
+      case OverallProjectConstants::Direction::LEFT:
+      {
+         // Decrement the tile selector column to check one tile left of the current tile selector location.
+         mTileSelectorColumn--;
+
+         // Make sure the tile selector does not go out of bounds of the left of the map.
+         if (mTileSelectorColumn < 0)
+         {
+            mTileSelectorColumn = 0;
+         }
+
+         // Break at the end end of the case as not to fall through the next case.
+         break;
+      }
+      case OverallProjectConstants::Direction::RIGHT:
+      {
+         // Increment the tile selector column to check one tile right of the current tile selector location.
+         mTileSelectorColumn++;
+
+         // Make sure the tile selector does not go out of bounds of the right of the map.
+         if (mTileSelectorColumn > mNumberOfTileColumns)
+         {
+            mTileSelectorColumn = mNumberOfTileColumns;
+         }
+
+         // Break at the end end of the case as not to fall through the next case.
+         break;
+      }
+      default:
+      {
+         // If the Default case occurs, then do nothing as this case should not occur.
       }
    }
 }
 
-//*************************************************************************************************
+//***************************************************************************************************************************************************
+//
+// Method Name: CalculateShipsMoveableArea
+//
+// Description:
+//  Calculate the tiles that the current ship that is taking its action turn can move to.
+//
+//***************************************************************************************************************************************************
+void BattleMap::CalculateShipsMoveableArea()
+{
+   // Note: Test code. This needs to be determined elsewhere.
+   mpCurrentShipsActionTurn = mpPlayerShips.front();
+
+   // Stop any unecessary processing in finding which tiles are needed by knowing that there are areas already found in the Already Found areas
+   // container. THe reasoning is becuase the Already Found container will be cleared once the ship moves, allowing processing for the next set of
+   // areas to be found at the new ship location.
+   if (mMoveableTiles.empty() == true)
+   {
+      // Holds the list of tile locations to investigate from for more moveable spaces.
+      std::vector<std::pair<int, int>> investigateAreas;
+      // List of new areas found from the investigate areas container.
+      std::vector<std::pair<int, int>> newInvestigateAreas;
+
+      // Add the ships location as the starting investigate area.
+      investigateAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->mShipTileColumn,
+                                                mpCurrentShipsActionTurn->mShipTileRow));
+
+      // Add the ships location as a tile where it can move to.
+      mMoveableTiles.push_back(std::make_pair(mpCurrentShipsActionTurn->mShipTileColumn,
+                                              mpCurrentShipsActionTurn->mShipTileRow));
+   
+      // For as many movement spaces that are left, check which tiles are needed in the moveable tile container for the tiles the ship can traverse
+      // to.
+      for (int currentMovementDistance = 0;
+           currentMovementDistance < mpCurrentShipsActionTurn->mMovementDistance;
+           currentMovementDistance++)
+      {
+         // For each tile that is to be investigated this iteration, search for each adjacent tile to check if it's already added to the moveable
+         // tiles container. If they aren't found in the moveable tiles container, then add them to the moveable tiles and new areas to investigate
+         // containers so the next iteration will know what tiles are already found and which tiles to check next respectfully.
+         for (auto currentInvestigateArea = investigateAreas.begin();
+              currentInvestigateArea < investigateAreas.end();
+              currentInvestigateArea++)
+         {
+            // Check the tile above of the investigate tile.
+            auto foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
+                                                       mMoveableTiles.end(),
+                                                       std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                                      (currentInvestigateArea)->second));
+            if (foundMoveableTileIterator == mMoveableTiles.end())
+            {
+               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                       (currentInvestigateArea)->second));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+
+            // Check the tile below of the investigate tile.
+            foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
+                                                 mMoveableTiles.end(),
+                                                 std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                                (currentInvestigateArea)->second));
+            if (foundMoveableTileIterator == mMoveableTiles.end())
+            {
+               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                       (currentInvestigateArea)->second));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+
+            // Check the tile to the left of the investigate tile.
+            foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
+                                                       mMoveableTiles.end(),
+                                                       std::make_pair((currentInvestigateArea)->first,
+                                                                      (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if (foundMoveableTileIterator == mMoveableTiles.end())
+            {
+               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                       (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+
+            // Check the tile to the right of the investigate tile.
+            foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
+                                                  mMoveableTiles.end(),
+                                                  std::make_pair((currentInvestigateArea)->first,
+                                                                 (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if (foundMoveableTileIterator == mMoveableTiles.end())
+            {
+               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                       (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+         }
+   
+         // Transfer the data from the new investigate areas container to the investigate areas container for the next iteratio to know which tiles
+         // to search from.
+         investigateAreas.clear();
+         investigateAreas = newInvestigateAreas;
+         newInvestigateAreas.clear();
+      }
+
+      // Clear the investigate area container.
+      investigateAreas.clear();
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: MoveShipToSelectedTile
+//
+// Description:
+//  Move the current ship that is taking its action turn to a new tile that is within the bounds of its movement distance.
+//
+//***************************************************************************************************************************************************
+void BattleMap::MoveShipToSelectedTile()
+{
+   // Note: Test code. This needs to be determined elsewhere.
+   mpCurrentShipsActionTurn = mpPlayerShips.front();
+
+   // Check if the selected are the tile selector is at is within the bounds of moveable tiles.
+   auto foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
+                                              mMoveableTiles.end(),
+                                              std::make_pair(mTileSelectorColumn,
+                                                             mTileSelectorRow));
+   if(foundMoveableTileIterator != mMoveableTiles.end())
+   {
+      // The tile selector selected a valid moveable tile so the ship is moved to where the tile selector is.
+      mpCurrentShipsActionTurn->mShipTileColumn = mTileSelectorColumn;
+      mpCurrentShipsActionTurn->mShipTileRow  = mTileSelectorRow;
+
+      // Clear the moveable tiles container as this will need to be updated as new movement needs to be calculated.
+      mMoveableTiles.clear();
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: Draw
+//
+// Description:
+//  Draw everything on the battle map that needs to drawn based on the current state of the battle map.
+//
+//***************************************************************************************************************************************************
+void BattleMap::Draw()
+{
+   // Note: This is prototype code. What is drawn and what order things are draw will need to be determined by the current state in the battle
+   //       (i.e. The state is ship menu then the ship menu should be drawn but the moveable area shouln't be drawn until it's in the ship move
+   //             state.).
+   DrawBattleMapTiles();
+   DrawShipsMoveableArea();
+   DrawShips();
+   DrawTileSelector();
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DrawBattleMapTiles
+//
+// Description:
+//  Draw the tiles of the battle map by iterating through the 2D battle map array and drawing the indicate tile at each location.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DrawBattleMapTiles()
+{
+   // Load the image used for the tiles.
+   ALLEGRO_BITMAP* pTileImage;
+   pTileImage = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/SpaceTile.png");
+  
+   // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
+   al_convert_mask_to_alpha(pTileImage,
+                            OverallProjectConstants::MAGENTA_COLOR);
+
+   // Note: This is prototype code and will be updated. Will need to know which tile in the tile sheet to use and how to draw just that tile.
+   // Iterate through all the columns and rows of the battle and draw the tile.
+   for (int currentRow = 0;
+        currentRow < mNumberOfTileRows;
+        currentRow++)
+   {
+      for (int currentColumn = 0;
+           currentColumn < mNumberOfTileColumns;
+           currentColumn++)
+      {
+         al_draw_bitmap(pTileImage,
+                        currentRow * OverallProjectConstants::TILE_HEIGHT,
+                        currentColumn * OverallProjectConstants::TILE_WIDTH,
+                        BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+      }
+   }
+
+   // Clean up memory by destroying the bitmap.
+   al_destroy_bitmap(pTileImage);
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DrawShipsMoveableArea
+//
+// Description:
+//  Draw the moveable areas the ship can move to by iterating the moveable tile container and drawing an indication at each tile location in the
+//  container.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DrawShipsMoveableArea()
+{
+   // Load the image used for the moveable tile location.
+   ALLEGRO_BITMAP* pMoveableTile;
+   pMoveableTile = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MoveableAreaTile.png");
+   
+   // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
+   al_convert_mask_to_alpha(pMoveableTile,
+                            OverallProjectConstants::MAGENTA_COLOR);
+
+   // Iterate through the list of moveable tiles and draw indication of where the player can select.
+   for (auto currentMoveableTileIterator = mMoveableTiles.begin();
+        currentMoveableTileIterator < mMoveableTiles.end();
+        currentMoveableTileIterator++)
+   {
+      al_draw_bitmap(pMoveableTile,
+                     currentMoveableTileIterator->first * OverallProjectConstants::TILE_WIDTH,
+                     currentMoveableTileIterator->second * OverallProjectConstants::TILE_HEIGHT,
+                     BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+   }
+
+   // Clean up memory by destroying the bitmap.
+   al_destroy_bitmap(pMoveableTile);
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DrawShips
+//
+// Description:
+//  Draw all the ships on the display for the next frame by iterating through the each players/AIs ship list for the battle and drawing at the
+//  locations the ships indicate they are at.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DrawShips()
+{
+   // Iterate through the list of player ships and draw them at the tile location the ship is indicated to be at.
+   for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end(); ShipIterator++)
+   {
+      al_draw_bitmap((*ShipIterator)->mShipImage,
+                     (*ShipIterator)->mShipTileColumn * OverallProjectConstants::TILE_WIDTH,
+                     (*ShipIterator)->mShipTileRow * OverallProjectConstants::TILE_HEIGHT,
+                     BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+   }
+
+   // Iterate through the list of enemy ships and draw them at the tile location the ship is indicated to be at.
+   for (auto ShipIterator = mpEnemyShips.begin(); ShipIterator != mpEnemyShips.end(); ShipIterator++)
+   {
+      al_draw_bitmap((*ShipIterator)->mShipImage,
+                     (*ShipIterator)->mShipTileColumn * OverallProjectConstants::TILE_WIDTH,
+                     (*ShipIterator)->mShipTileRow * OverallProjectConstants::TILE_HEIGHT,
+                     BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DrawTileSelector
+//
+// Description:
+//  Draw the tile selector by drawing the tile selector where it indicates it's currently located at.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DrawTileSelector()
+{
+   // Load the image used for the tile selector.
+   ALLEGRO_BITMAP* pTileSelectorImage;
+   pTileSelectorImage = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/TileSelector.png");
+
+   // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
+   al_convert_mask_to_alpha(pTileSelectorImage,
+                            OverallProjectConstants::MAGENTA_COLOR);
+
+   // Draw the tile selector based on which tile column and and row it is located at.
+   al_draw_bitmap(pTileSelectorImage,
+                  mTileSelectorColumn * OverallProjectConstants::TILE_WIDTH,
+                  mTileSelectorRow * OverallProjectConstants::TILE_HEIGHT,
+                  BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+
+   // Clean up memory by destroying the bitmap.
+   al_destroy_bitmap(pTileSelectorImage);
+}
+
+//***************************************************************************************************************************************************
 //                                   End Public Method Definitions
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 //                                 Start Protected Method Definitions
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 
+// Note: There are no protected methods in this class.
 
-
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 //                                  End Protected Method Definitions
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 //                                  Start Private Method Definitions
-//*************************************************************************************************
+//***************************************************************************************************************************************************
 
-
+// Note: There are no provate methods in this class.
 
 //*************************************************************************************************
 //                                   End Private Method Definitions

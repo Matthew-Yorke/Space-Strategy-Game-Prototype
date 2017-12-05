@@ -27,7 +27,7 @@ class Game
       // Method Name: Game
       //
       // Description:
-      //  TODO: Add method description.
+      //  Constructor for the game that initializes member variables.
       //
       // Arguments:
       //  N/A
@@ -43,7 +43,7 @@ class Game
       // Method Name: Initialize
       //
       // Description:
-      //  TODO: Add method description.
+      //  Initialize the game class by starting up necessary allegro routines and timers.
       //
       // Arguments:
       //  N/A
