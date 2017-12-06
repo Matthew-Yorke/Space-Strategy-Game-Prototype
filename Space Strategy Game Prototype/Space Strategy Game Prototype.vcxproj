@@ -169,6 +169,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BattleMenu.cpp" />
     <ClCompile Include="Crew.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -178,6 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BattleMapConstants.h" />
+    <ClInclude Include="BattleMenu.h" />
     <ClInclude Include="Crew.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="BattleMap.h" />

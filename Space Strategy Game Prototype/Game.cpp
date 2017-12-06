@@ -22,6 +22,7 @@
 #include <allegro5/allegro_acodec.h>
 #include "Game.h"
 #include "BattleMap.h"
+#include "BattleMenu.h"
 
 //*************************************************************************************************
 //                                  Start Public Method Definitions
@@ -116,6 +117,28 @@ bool Game::Initialize()
       return false;
    }
 
+   //Install the font addon for allegro
+   al_init_font_addon();
+   // Install the keyboard for allegro and catch if a failure occurrs.
+   if (!al_init_font_addon())
+   {
+      al_show_native_message_box(mpDisplay, "Error", "Error: initialize font addon", "Failed to initialize the font addon!",
+         NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
+      return false;
+   }
+
+   //Install the ttf(True Type Font) for allegro
+   al_init_ttf_addon();
+   // Install the keyboard for allegro and catch if a failure occurrs.
+   if (!al_init_ttf_addon())
+   {
+      al_show_native_message_box(mpDisplay, "Error", "Error: initialize ttf addon", "Failed to initialize the ttf addon!",
+         NULL, ALLEGRO_MESSAGEBOX_ERROR);
+      al_destroy_display(mpDisplay);
+      return false;
+   }
+
    // Setup the event_queue and catch if a failure occurs.
    mpEventQueue = al_create_event_queue();
    if (!mpEventQueue) {
@@ -182,23 +205,33 @@ void Game::GameLoop()
          {
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_W)
             {
-               bm.MoveTileSelector(OverallProjectConstants::Direction::UP);
+               bm.UpKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_A)
             {
-               bm.MoveTileSelector(OverallProjectConstants::Direction::LEFT);
+               //bm.MoveTileSelector(OverallProjectConstants::Direction::LEFT);
+               bm.LeftKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_S)
             {
-               bm.MoveTileSelector(OverallProjectConstants::Direction::DOWN);
+               bm.DownKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_D)
             {
-               bm.MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
+               //bm.MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
+               bm.RightKeyPressed();
+            }
+            if (nextEvent.keyboard.keycode == ALLEGRO_KEY_Z)
+            {
+               bm.ActionKeyPressed();
+            }
+            if (nextEvent.keyboard.keycode == ALLEGRO_KEY_X)
+            {
+               bm.CancelKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_SPACE)
             {
-               bm.MoveShipToSelectedTile();
+               //bm.MoveShipToSelectedTile();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
             {
@@ -227,6 +260,7 @@ void Game::GameLoop()
             // Note: This will occurr ever 1/60th a second.
             if (nextEvent.timer.source == mpTimer)
             { 
+               bm.DetermineNextActionTurn();
                bm.CalculateShipsMoveableArea();
                bm.Draw();
                al_flip_display();

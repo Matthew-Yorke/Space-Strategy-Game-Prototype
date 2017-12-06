@@ -58,6 +58,9 @@ Ship::Ship(bool theIsManuverable, int theMovementDistance, int theNumberOfSmallW
    // Temp Code Below
    mShipTileColumn = 4;
    mShipTileRow = 4;
+
+   mActionSpeed = 5;
+   mActionLevel = 0;
 }
 
 //*******************************************************************************************
@@ -96,6 +99,21 @@ void Ship::SetCrew(Crew* theCrew)
 //*******************************************************************************************
 void Ship::MoveShip()
 {
+}
+
+void Ship::ResetActionLevel()
+{
+   mActionLevel = 0;
+}
+
+void Ship::IncrementActionLevel()
+{
+   mActionLevel += mActionSpeed;
+}
+
+int Ship::GetActionLevel()
+{
+   return mActionLevel;
 }
 
 //*************************************************************************************************

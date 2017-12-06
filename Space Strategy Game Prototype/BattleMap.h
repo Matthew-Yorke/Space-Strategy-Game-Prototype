@@ -19,17 +19,12 @@
 #include <vector>
 #include "Ship.h"
 #include "OverallProjectConstants.h"
+#include "BattleMenu.h"
 
 class BattleMap
 {
-   struct VectorTwoDimensional
-   {
-      int Column;
-      int Row;
-   };
-
    //************************************************************************************************************************************************
-   //                                   Start Method Declarations
+   // Start Method Declarations
    //************************************************************************************************************************************************
 
 public:
@@ -68,6 +63,102 @@ public:
 
    //************************************************************************************************************************************************
    //
+   // Method Name: UpKeyPressed
+   //
+   // Description:
+   //  Process the action for when the up key is pressed based on the current battle state.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void UpKeyPressed();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: LeftKeyPressed
+   //
+   // Description:
+   //  Process the action for when the left key is pressed based on the current battle state.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void LeftKeyPressed();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: DownKeyPressed
+   //
+   // Description:
+   //  Process the action for when the down key is pressed based on the current battle state.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void DownKeyPressed();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: RightKeyPressed
+   //
+   // Description:
+   //  Process the action for when the right key is pressed based on the current battle state.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void RightKeyPressed();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: ActionKeyPressed
+   //
+   // Description:
+   //  Process the action for when the action key is pressed based on the current battle state.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void ActionKeyPressed();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: CancelKeyPressed
+   //
+   // Description:
+   //  Process the action for when the cancel key is pressed based on the current battle state.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void CancelKeyPressed();
+   
+   //************************************************************************************************************************************************
+   //
    // Method Name: LoadMap
    //
    // Description:
@@ -103,7 +194,7 @@ public:
    // Method Name: RemovePlayerShip
    //
    // Description:
-   //  TODO: Add method description.
+   //  Remove a ship from the players ship list.
    //
    // Arguments:
    //  thepPlayerShip - A pointer to the ship that is being removed to the players ship list.
@@ -119,7 +210,7 @@ public:
    // Method Name: MoveTileSelector
    //
    // Description:
-   //  TODO: Add method description.
+   //  Move the tile selector one tile based on the direction passed in.
    //
    // Arguments:
    //  theDirection - The direction the tile selector is moving towards.
@@ -129,6 +220,22 @@ public:
    //
    //************************************************************************************************************************************************
    void MoveTileSelector(OverallProjectConstants::Direction theDirection);
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: CenterTileSelector
+   //
+   // Description:
+   //  Calculates the tiles the current ship that is taking its action turn can move to.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void CenterTileSelector();
 
    //************************************************************************************************************************************************
    //
@@ -162,6 +269,38 @@ public:
    //
    //************************************************************************************************************************************************
    void MoveShipToSelectedTile();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: DetermineStateFromMenu
+   //
+   // Description:
+   //  Determine which battle state to switch to based on the selection from the main battle menu.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void DetermineStateFromMenu();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: DetermineNextActionTurn
+   //
+   // Description:
+   //  Determine which ship takes its action turn next.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void DetermineNextActionTurn();
 
    //************************************************************************************************************************************************
    //
@@ -252,11 +391,11 @@ private:
    // There are currently no private methods for this class.
 
    //************************************************************************************************************************************************
-   //                                    End Method Declarations
+   // End Method Declarations
    //************************************************************************************************************************************************
 
    //************************************************************************************************************************************************
-   //                                Start Member Vairable Declarations
+   // Start Member Vairable Declarations
    //************************************************************************************************************************************************
 
 public:
@@ -268,6 +407,13 @@ protected:
    // There are currently no protected member variables for this class.
 
 private:
+
+   // The states that the battle can be.
+   // DETERMINING - Used to calculate which ship will take it's next action turn.
+   // MENU_MAIN - Used to determine the player is currently selecting from the menu's main window.
+   // MOVE - Used to determine where the player can move a ship.
+   // ATTACK - Used to determine the player is selecting an attack area.
+   enum BattleState { DETERMINING, MENU_MAIN, MOVE, ATTACK};
 
    // A dynamic 2-Dimensional array the holds tile information for each tile in the battle map. This is created upon a read of a battle map file and
    // deleted upon class destruction or before reading a new battle map file.
@@ -300,8 +446,14 @@ private:
    // Pointer to the ship that is taking its action turn.
    Ship* mpCurrentShipsActionTurn;
 
+   // Pointer to the battle menu that is used for the player to select an action for a ship to perform.
+   BattleMenu* mpBattleMenu;
+
+   // Tracks the current battle state to determine what action to perform when processing is occurring.
+   BattleState mCurrentBattleState;
+
    //************************************************************************************************************************************************
-   //                                 End Member Vairable Declarations
+   // End Member Vairable Declarations
    //************************************************************************************************************************************************
 };
 

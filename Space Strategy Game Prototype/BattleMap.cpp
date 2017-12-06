@@ -28,7 +28,7 @@
 #include <sstream>
 
 //***************************************************************************************************************************************************
-//                                                         Start Public Method Definitions
+// Start Public Method Definitions
 //***************************************************************************************************************************************************
 
 //***************************************************************************************************************************************************
@@ -51,6 +51,12 @@ BattleMap::BattleMap()
 
    // Set the default current ship that is in its action turn.
    mpCurrentShipsActionTurn = nullptr;
+
+   // Create a new battle menu object to use for this battle.
+   mpBattleMenu = new BattleMenu();
+   
+   // Set the default state to start determining which ship will go first.
+   mCurrentBattleState = BattleState::DETERMINING;
 }
 
 //***************************************************************************************************************************************************
@@ -86,6 +92,211 @@ BattleMap::~BattleMap()
    {
       delete mpEnemyShips.back();
       mpEnemyShips.pop_back();
+   }
+
+   // Clean up allocated memory used for the battle menu.
+   delete mpBattleMenu;
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: UpKeyPressed
+//
+// Description:
+//  Perform an action dependant on the battle state when the up key is pressed:
+//     MENU_MAIN - Move the the cursor up one selection.
+//     MOVE - Move the tile selector up one tile.
+//
+//***************************************************************************************************************************************************
+void BattleMap::UpKeyPressed()
+{
+   // Determine which battle state is currently occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state is in the ship action menu (main) selector state.
+      case BattleState::MENU_MAIN:
+      {
+         // Move the battle menu cursor up on selection.
+         mpBattleMenu->MoveCursorUp();
+         break;
+      }
+      // The battle state is in the ship movement selector state.
+      case BattleState::MOVE:
+      {
+         // Move the tile selector one tile up.
+         MoveTileSelector(OverallProjectConstants::Direction::UP);
+         break;
+      }
+      // All other states not defined here or an error state occured.
+      default:
+      {
+         // If the Default case occurs, then do nothing as nothing should happened when the up button is pressed that is not defined above.
+      }
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: LeftKeyPressed
+//
+// Description:
+//  Perform an action dependant on the battle state when the up key is pressed:
+//     MOVE - Move the tile selector left one tile.
+//
+//***************************************************************************************************************************************************
+void BattleMap::LeftKeyPressed()
+{
+   // Determine which battle state is currently occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state is in the ship movement selector state.
+      case BattleState::MOVE:
+      {
+         // Move the tile selector one tile left.
+         MoveTileSelector(OverallProjectConstants::Direction::LEFT);
+         break;
+      }
+      // All other states not defined here or an error state occured.
+      default:
+      {
+         // If the Default case occurs, then do nothing as nothing should happened when the left button is pressed that is not defined above.
+      }
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DownKeyPressed
+//
+// Description:
+//  Perform an action dependant on the battle state when the up key is pressed:
+//     MENU_MAIN - Move the the cursor down one selection.
+//     MOVE - Move the tile selector down one tile.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DownKeyPressed()
+{
+   // Determine which battle state is currently occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state is in the ship action menu (main) selector state.
+      case BattleState::MENU_MAIN:
+      {
+         // Move the battle menu cursor down on selection.
+         mpBattleMenu->MoveCursorDown();
+         break;
+      }
+      // The battle state is in the ship movement selector state.
+      case BattleState::MOVE:
+      {
+         // Move the tile selector one tile down.
+         MoveTileSelector(OverallProjectConstants::Direction::DOWN);
+         break;
+      }
+      // All other states not defined here or an error state occured.
+      default:
+      {
+         // If the Default case occurs, then do nothing as nothing should happened when the down button is pressed that is not defined above.
+      }
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: RightKeyPressed
+//
+// Description:
+//  Perform an action dependant on the battle state when the up key is pressed:
+//     MOVE - Move the tile selector right one tile.
+//
+//***************************************************************************************************************************************************
+void BattleMap::RightKeyPressed()
+{
+   // Determine which battle state is currently occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state is in the ship movement selector state.
+      case BattleState::MOVE:
+      {
+         // Move the tile selector on tile to the right.
+         MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
+         break;
+      }
+      // All other states not defined here or an error state occured.
+      default:
+      {
+         // If the Default case occurs, then do nothing as nothing should happened when the right button is pressed that is not defined above.
+      }
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: ActionKeyPressed
+//
+// Description:
+//  Perform an action dependant on the battle state when the action key is pressed:
+//     MENU_MAIN - Center the tile selector and determine which battle state to change to based on the menu item selected.
+//     MOVE - Move the current ship taking its action turn to the selected tile (if within the movement bounds) and set the battle state to return
+//            to the main battle menu.
+//
+//***************************************************************************************************************************************************
+void BattleMap::ActionKeyPressed()
+{
+   // Determine which battle state is currently occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state is in the ship action menu (main) selector state.
+      case BattleState::MENU_MAIN:
+      {
+         // Center the tile selector to where the ship that is currently taking its action turn and then determine which state to change to next
+         // based on the selection in the main battle menu.
+         CenterTileSelector();
+         DetermineStateFromMenu();
+         break;
+      }
+      // The battle state is in the ship movement selector state.
+      case BattleState::MOVE:
+      {
+         // Move the ship to the selected tile and then revert back to the main battle menu state.
+         MoveShipToSelectedTile();
+         mCurrentBattleState = BattleState::MENU_MAIN;
+         break;
+      }
+      // All other states not defined here or an error state occured.
+      default:
+      {
+         // If the Default case occurs, then do nothing as nothing should happened when the action button is pressed that is not defined above.
+      }
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: CancelKeyPressed
+//
+// Description:
+//  Perform an action dependant on the battle state when the cancel key is pressed:
+//     MOVE - Set the battle state to return to the main battle menu.
+//
+//***************************************************************************************************************************************************
+void BattleMap::CancelKeyPressed()
+{
+   // Determine which battle state is currently occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state is in the ship movement selector state.
+      case BattleState::MOVE:
+      {
+         // Change the current battle state to revert back to the main battle menu state.
+         mCurrentBattleState = BattleState::MENU_MAIN;
+         break;
+      }
+      // All other states not defined here or an error state occured.
+      default:
+      {
+         // If the Default case occurs, then do nothing as nothing should happened when the cancel button is pressed that is not defined above.
+      }
    }
 }
 
@@ -296,6 +507,21 @@ void BattleMap::MoveTileSelector(OverallProjectConstants::Direction theDirection
 
 //***************************************************************************************************************************************************
 //
+// Method Name: CenterTileSelector
+//
+// Description:
+//  Center the tile selector to the tile the ship that is taking its action turn.
+//
+//***************************************************************************************************************************************************
+void BattleMap::CenterTileSelector()
+{
+   // Set the tile selector column and row to be the same as the ship that is currently taking its action turn.
+   mTileSelectorColumn = mpCurrentShipsActionTurn->mShipTileColumn;
+   mTileSelectorRow = mpCurrentShipsActionTurn->mShipTileRow;
+}
+
+//***************************************************************************************************************************************************
+//
 // Method Name: CalculateShipsMoveableArea
 //
 // Description:
@@ -413,9 +639,6 @@ void BattleMap::CalculateShipsMoveableArea()
 //***************************************************************************************************************************************************
 void BattleMap::MoveShipToSelectedTile()
 {
-   // Note: Test code. This needs to be determined elsewhere.
-   mpCurrentShipsActionTurn = mpPlayerShips.front();
-
    // Check if the selected are the tile selector is at is within the bounds of moveable tiles.
    auto foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
                                               mMoveableTiles.end(),
@@ -429,6 +652,80 @@ void BattleMap::MoveShipToSelectedTile()
 
       // Clear the moveable tiles container as this will need to be updated as new movement needs to be calculated.
       mMoveableTiles.clear();
+
+      mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->mShipTileColumn * 64, mpCurrentShipsActionTurn->mShipTileRow * 64);
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DetermineStateFromMenu
+//
+// Description:
+//  Retrieve the selection index from the battle menu and determine which battle state to change to.
+//     Index 0 - Switch to the ship movement selector state.
+//     Index 1 - Switch to the attack selector state.
+//     Index 2 - Switch to the determining state to decide which state is next to take its action turn.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DetermineStateFromMenu()
+{
+   // Retrieve the selection index from the battle menu.
+   int selection = mpBattleMenu->GetSelectionIndex();
+   
+   // The selection index is to switch to the movement selector state.
+   if (selection == 0)
+   {
+      mCurrentBattleState = BattleState::MOVE;
+   }
+   // The selection index is to switch to the attack selector state.
+   else if (selection == 1)
+   {
+      mCurrentBattleState = BattleState::ATTACK;
+   }
+   // The selection index is to switch to the determining state. The ship that is finishing its action turn has its action level reset.
+   else
+   {
+      mCurrentBattleState = BattleState::DETERMINING;
+      mpCurrentShipsActionTurn->ResetActionLevel();
+      mpBattleMenu->ResetCursor();
+   }   
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: DetermineNextActionTurn
+//
+// Description:
+//  Determines which ship is next to take its action turn. If no ship is taking its action turn then increment all ships action level by their
+//  speeds.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DetermineNextActionTurn()
+{
+   // Only occurs while in the determining state.
+   if (mCurrentBattleState == BattleState::DETERMINING)
+   {
+      // Iterate through all the player ships.
+      for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end(); ShipIterator++)
+      {
+         // Check if the next ship has reached the action level where it can take its action turn.
+         if ((*ShipIterator)->GetActionLevel() >= 100)
+         {
+            // Set that this ship is now going to take its action turn.
+            mpCurrentShipsActionTurn = (*ShipIterator);
+            // Set the battle menu to display to the right of the ship.
+            mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->mShipTileColumn * 64, mpCurrentShipsActionTurn->mShipTileRow * 64);
+            // Change the battle state to be the main battle menu for this ship to start taking its action turn.
+            mCurrentBattleState = BattleState::MENU_MAIN;
+         }
+         // The ship being checked has not reached the action level where it can take its action turn.
+         else
+         {
+            // Increment this ships action level by its speed.
+            (*ShipIterator)->IncrementActionLevel();
+         }
+      }
    }
 }
 
@@ -442,13 +739,42 @@ void BattleMap::MoveShipToSelectedTile()
 //***************************************************************************************************************************************************
 void BattleMap::Draw()
 {
-   // Note: This is prototype code. What is drawn and what order things are draw will need to be determined by the current state in the battle
-   //       (i.e. The state is ship menu then the ship menu should be drawn but the moveable area shouln't be drawn until it's in the ship move
-   //             state.).
-   DrawBattleMapTiles();
-   DrawShipsMoveableArea();
-   DrawShips();
-   DrawTileSelector();
+   // Determine which battle state is occurring.
+   switch (mCurrentBattleState)
+   {
+      // The battle state to determine which ship will be next to take its action turn next.
+      case BattleState::DETERMINING:
+      {
+         // Draw the tile for the map and the ships on the map.
+         DrawBattleMapTiles();
+         DrawShips();
+         break;
+      }
+      case BattleState::MENU_MAIN:
+      {
+         // Draw the tile for the map, the ships on the map, and the battle menu.
+         DrawBattleMapTiles();
+         DrawShips();
+         mpBattleMenu->DrawMenu();
+         mpBattleMenu->DrawCursor();
+         break;
+      }
+      case BattleState::MOVE:
+      {
+         // Draw the tile for the map, the moveable area that the ship can traverse to, the ships on the map, and the tile selector.
+         DrawBattleMapTiles();
+         DrawShipsMoveableArea();
+         DrawShips();
+         DrawTileSelector();
+         break;
+      }
+      default:
+      {
+         // Draw the tile for the map and the ships on the map.
+         DrawBattleMapTiles();
+         DrawShips();
+      }
+   }
 }
 
 //***************************************************************************************************************************************************
@@ -583,25 +909,25 @@ void BattleMap::DrawTileSelector()
 }
 
 //***************************************************************************************************************************************************
-//                                   End Public Method Definitions
+// End Public Method Definitions
 //***************************************************************************************************************************************************
 
 //***************************************************************************************************************************************************
-//                                 Start Protected Method Definitions
+// Start Protected Method Definitions
 //***************************************************************************************************************************************************
 
 // Note: There are no protected methods in this class.
 
 //***************************************************************************************************************************************************
-//                                  End Protected Method Definitions
+// End Protected Method Definitions
 //***************************************************************************************************************************************************
 
 //***************************************************************************************************************************************************
-//                                  Start Private Method Definitions
+// Start Private Method Definitions
 //***************************************************************************************************************************************************
 
 // Note: There are no provate methods in this class.
 
-//*************************************************************************************************
-//                                   End Private Method Definitions
-//*************************************************************************************************
+//***************************************************************************************************************************************************
+// End Private Method Definitions
+//***************************************************************************************************************************************************

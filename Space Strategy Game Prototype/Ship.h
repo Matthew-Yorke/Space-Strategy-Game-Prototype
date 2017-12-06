@@ -96,6 +96,12 @@ public:
    //*******************************************************************************************
    void MoveShip();
 
+   void ResetActionLevel();
+
+   void IncrementActionLevel();
+   
+   int GetActionLevel();
+
 protected:
 
 private:
@@ -168,6 +174,9 @@ private:
 
    // Holds the number of crew members assigned to be engineers, this effects ship defenses and manuverability.
    int mNumberOfEngineers;
+
+   int mActionSpeed;
+   int mActionLevel;
 
    //**********************************************************************************************
    //                                 End Member Vairable Declarations
