@@ -35,7 +35,7 @@
 //  Set the member variables for this class to default values.
 //
 //***************************************************************************************************************************************************
-BattleMenu::BattleMenu()
+BattleMenu::BattleMenu(Graphics& theGraphics)
 {
    // Load the battle menu font.
    mpMenuFont = al_load_ttf_font("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Fonts/CamingoCode-Regular.ttf",
@@ -43,12 +43,14 @@ BattleMenu::BattleMenu()
                                  0);
 
    // Load the image for the cursor for the battle menu and set the default values for the x and y coordinate to draw it at.
-   mMenuCursor.pCursorImage = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MenuCursor.png");
+   mMenuCursor.pCursorImage =  new AnimatedSprite(theGraphics,
+                                                  "C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MenuCursorSpriteSheet.png",
+                                                  0, 0, 16, 16, 10, 4);//al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MenuCursor.png");
    mMenuCursor.XCoordinate = 0;
    mMenuCursor.YCoordinate = 16;
 
    // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
-   al_convert_mask_to_alpha(mMenuCursor.pCursorImage, OverallProjectConstants::MAGENTA_COLOR);
+   //al_convert_mask_to_alpha(mMenuCursor.pCursorImage, OverallProjectConstants::MAGENTA_COLOR);
 
    // Set the menu selection index to the first item in the menu.
    mMenuSelectionIndex = 0;
@@ -72,7 +74,7 @@ BattleMenu::~BattleMenu()
    al_destroy_font(mpMenuFont);
 
    // Clean up memory allocated for the cursor.
-   al_destroy_bitmap(mMenuCursor.pCursorImage);
+   //al_destroy_bitmap(mMenuCursor.pCursorImage);
 }
 
 //************************************************************************************************************************************************
@@ -138,12 +140,12 @@ void BattleMenu::MoveCursorDown()
 void BattleMenu::DrawMenu()
 {
    // Draw a box for the battle menu to contain all the other elements of the battle menu.
-   al_draw_filled_rectangle(mCurrentShipLocationX, mCurrentShipLocationY, mCurrentShipLocationX + 122, mCurrentShipLocationY + 68, al_map_rgb(255, 255, 255));
+   al_draw_filled_rectangle(mCurrentShipLocationX, mCurrentShipLocationY, mCurrentShipLocationX + 124, mCurrentShipLocationY + 68, al_map_rgb(255, 255, 255));
 
    // Draw the text for the selections on the battle menu.
-   al_draw_text(mpMenuFont, al_map_rgb(0, 0, 0), mCurrentShipLocationX + 21, mCurrentShipLocationY + 5, ALLEGRO_ALIGN_LEFT, "Move");
-   al_draw_text(mpMenuFont, al_map_rgb(0, 0, 0), mCurrentShipLocationX + 21, mCurrentShipLocationY + 21, ALLEGRO_ALIGN_LEFT, "Attack");
-   al_draw_text(mpMenuFont, al_map_rgb(0, 0, 0), mCurrentShipLocationX + 21, mCurrentShipLocationY + 37, ALLEGRO_ALIGN_LEFT, "Wait");
+   al_draw_text(mpMenuFont, al_map_rgb(0, 0, 0), mCurrentShipLocationX + 23, mCurrentShipLocationY + 5, ALLEGRO_ALIGN_LEFT, "Move");
+   al_draw_text(mpMenuFont, al_map_rgb(0, 0, 0), mCurrentShipLocationX + 23, mCurrentShipLocationY + 21, ALLEGRO_ALIGN_LEFT, "Attack");
+   al_draw_text(mpMenuFont, al_map_rgb(0, 0, 0), mCurrentShipLocationX + 23, mCurrentShipLocationY + 37, ALLEGRO_ALIGN_LEFT, "Wait");
 }
 
 //***************************************************************************************************************************************************
@@ -154,10 +156,24 @@ void BattleMenu::DrawMenu()
 //  Draw the cursor to be displayed on the battle menu.
 //
 //***************************************************************************************************************************************************
-void BattleMenu::DrawCursor()
+void BattleMenu::DrawCursor(Graphics& theGraphics)
 {
    // Draw the cursor on the battle menu to be left and centered height of the currently item it points at in the battle menu.
-   al_draw_bitmap(mMenuCursor.pCursorImage, mMenuCursor.XCoordinate, mMenuCursor.YCoordinate+8, 0);
+   mMenuCursor.pCursorImage->Draw(theGraphics, mMenuCursor.XCoordinate+2, mMenuCursor.YCoordinate+8);
+   //al_draw_bitmap(mMenuCursor.pCursorImage, mMenuCursor.XCoordinate, mMenuCursor.YCoordinate+8, 0);
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: Update
+//
+// Description:
+//  TODO: Add description.
+//
+//***************************************************************************************************************************************************
+void BattleMenu::Update(float theElapsedTime)
+{
+   mMenuCursor.pCursorImage->Update(theElapsedTime);
 }
 
 //***************************************************************************************************************************************************

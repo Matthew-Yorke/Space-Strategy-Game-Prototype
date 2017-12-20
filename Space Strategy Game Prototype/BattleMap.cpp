@@ -39,7 +39,7 @@
 //  Set the member variables for this class to default values.
 //
 //***************************************************************************************************************************************************
-BattleMap::BattleMap()
+BattleMap::BattleMap(Graphics& theGraphics)
 {
    // Set the default number of tile columns and rows in the map.
    mNumberOfTileColumns = 0;
@@ -53,7 +53,7 @@ BattleMap::BattleMap()
    mpCurrentShipsActionTurn = nullptr;
 
    // Create a new battle menu object to use for this battle.
-   mpBattleMenu = new BattleMenu();
+   mpBattleMenu = new BattleMenu(theGraphics);
    
    // Set the default state to start determining which ship will go first.
    mCurrentBattleState = BattleState::DETERMINING;
@@ -737,7 +737,7 @@ void BattleMap::DetermineNextActionTurn()
 //  Draw everything on the battle map that needs to drawn based on the current state of the battle map.
 //
 //***************************************************************************************************************************************************
-void BattleMap::Draw()
+void BattleMap::Draw(Graphics& theGraphics)
 {
    // Determine which battle state is occurring.
    switch (mCurrentBattleState)
@@ -756,7 +756,7 @@ void BattleMap::Draw()
          DrawBattleMapTiles();
          DrawShips();
          mpBattleMenu->DrawMenu();
-         mpBattleMenu->DrawCursor();
+         mpBattleMenu->DrawCursor(theGraphics);
          break;
       }
       case BattleState::MOVE:
@@ -906,6 +906,19 @@ void BattleMap::DrawTileSelector()
 
    // Clean up memory by destroying the bitmap.
    al_destroy_bitmap(pTileSelectorImage);
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: Update
+//
+// Description:
+//  TODO: Add description.
+//
+//***************************************************************************************************************************************************
+void BattleMap::Update(float theElapsedTime)
+{
+   mpBattleMenu->Update(theElapsedTime);
 }
 
 //***************************************************************************************************************************************************

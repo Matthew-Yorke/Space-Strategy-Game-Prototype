@@ -179,11 +179,15 @@ void Game::GameLoop()
    // Tracks what the next event will be from the event queue.
    ALLEGRO_EVENT nextEvent;
 
+   Graphics graphics(mpDisplay);
+
    // Note: This is purely to test the map file for loading and drawing the map that is currently loaded.
-   BattleMap bm;
-   bm.LoadMap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/BattleMaps/PrototypeBattleMap.txt");
+   BattleMap* bm = new BattleMap(graphics);
+   bm->LoadMap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/BattleMaps/PrototypeBattleMap.txt");
    Ship* StarterShip = new Ship(false, 3, 2, 1, 1);
-   bm.AddPlayerShip(StarterShip);
+   bm->AddPlayerShip(StarterShip);
+   bool redraw = false;
+   float lastUpdateTime = static_cast<float>(al_current_time());
 
    // Continously loop until the game is exited.
    while (mIsGameDone == false)
@@ -205,29 +209,29 @@ void Game::GameLoop()
          {
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_W)
             {
-               bm.UpKeyPressed();
+               bm->UpKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_A)
             {
                //bm.MoveTileSelector(OverallProjectConstants::Direction::LEFT);
-               bm.LeftKeyPressed();
+               bm->LeftKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_S)
             {
-               bm.DownKeyPressed();
+               bm->DownKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_D)
             {
                //bm.MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
-               bm.RightKeyPressed();
+               bm->RightKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_Z)
             {
-               bm.ActionKeyPressed();
+               bm->ActionKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_X)
             {
-               bm.CancelKeyPressed();
+               bm->CancelKeyPressed();
             }
             if (nextEvent.keyboard.keycode == ALLEGRO_KEY_SPACE)
             {
@@ -260,14 +264,25 @@ void Game::GameLoop()
             // Note: This will occurr ever 1/60th a second.
             if (nextEvent.timer.source == mpTimer)
             { 
-               bm.DetermineNextActionTurn();
-               bm.CalculateShipsMoveableArea();
-               bm.Draw();
-               al_flip_display();
+               bm->DetermineNextActionTurn();
+               bm->CalculateShipsMoveableArea();
+
+               const float currentTime = static_cast<float>(al_current_time());
+               bm->Update(currentTime - lastUpdateTime);
+               lastUpdateTime = currentTime;
+               redraw = true;
             }
          }
       }
       while (!al_is_event_queue_empty(mpEventQueue));
+
+      if (redraw)
+      {
+         redraw = false;
+
+         bm->Draw(graphics);
+         al_flip_display();
+      }
    }
 }
 

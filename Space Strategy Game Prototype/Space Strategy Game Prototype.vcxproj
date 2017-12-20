@@ -169,23 +169,29 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AnimatedSprite.cpp" />
     <ClCompile Include="BattleMenu.cpp" />
     <ClCompile Include="Crew.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="BattleMap.cpp" />
     <ClCompile Include="PlayerInventories.cpp" />
     <ClCompile Include="Ship.cpp" />
+    <ClCompile Include="Sprite.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AnimatedSprite.h" />
     <ClInclude Include="BattleMapConstants.h" />
     <ClInclude Include="BattleMenu.h" />
     <ClInclude Include="Crew.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="BattleMap.h" />
+    <ClInclude Include="Graphics.h" />
     <ClInclude Include="OverallProjectConstants.h" />
     <ClInclude Include="PlayerInventories.h" />
     <ClInclude Include="Ship.h" />
+    <ClInclude Include="Sprite.h" />
     <ClInclude Include="Weapon.h" />
     <ClInclude Include="Asteroid.h" />
   </ItemGroup>
