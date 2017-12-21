@@ -38,14 +38,19 @@
 BattleMenu::BattleMenu(Graphics& theGraphics)
 {
    // Load the battle menu font.
-   mpMenuFont = al_load_ttf_font("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Fonts/CamingoCode-Regular.ttf",
+   mpMenuFont = al_load_ttf_font("Fonts/CamingoCode-Regular.ttf",
                                  16,
                                  0);
 
    // Load the image for the cursor for the battle menu and set the default values for the x and y coordinate to draw it at.
    mMenuCursor.pCursorImage =  new AnimatedSprite(theGraphics,
-                                                  "C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MenuCursorSpriteSheet.png",
-                                                  0, 0, 16, 16, 10, 4);//al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MenuCursor.png");
+                                                  "Images/MenuCursorSpriteSheet.png",
+                                                  0,
+                                                  0,
+                                                  16,
+                                                  16,
+                                                  10,
+                                                  4);
    mMenuCursor.XCoordinate = 0;
    mMenuCursor.YCoordinate = 16;
 

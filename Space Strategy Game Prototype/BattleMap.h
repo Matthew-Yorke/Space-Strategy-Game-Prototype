@@ -255,6 +255,22 @@ public:
 
    //************************************************************************************************************************************************
    //
+   // Method Name: CalculateShipsAttackableArea
+   //
+   // Description:
+   //  TODO: Add descripton.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void CalculateShipsAttackableArea();
+
+   //************************************************************************************************************************************************
+   //
    // Method Name: MoveShipToSelectedTile
    //
    // Description:
@@ -265,10 +281,26 @@ public:
    //  N/A
    //
    // Return:
-   //  N/A
+   //  TODO: Add description.
    //
    //************************************************************************************************************************************************
-   void MoveShipToSelectedTile();
+   bool MoveShipToSelectedTile();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: AttackSelectedTile
+   //
+   // Description:
+   //  TODO: Add description.
+   //
+   // Arguments:
+   //  N/A
+   //
+   // Return:
+   //  TODO: Add description.
+   //
+   //************************************************************************************************************************************************
+   bool AttackSelectedTile();
 
    //************************************************************************************************************************************************
    //
@@ -301,6 +333,24 @@ public:
    //
    //************************************************************************************************************************************************
    void DetermineNextActionTurn();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: Update
+   //
+   // Description:
+   //  TODO: Add description.
+   //
+   // Arguments:
+   //  theElpasedTime - TODO: Add description.
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void Update(float theElpasedTime);
+
+   bool IsTileOccupied(int theColumn, int theRow);
 
    //************************************************************************************************************************************************
    //
@@ -352,10 +402,10 @@ public:
 
    //************************************************************************************************************************************************
    //
-   // Method Name: DrawShips
+   // Method Name: DrawShipsAttackableArea
    //
    // Description:
-   //  Draw the ships for the battle map onto the back buffer.
+   //  TODO: Add description.
    //
    // Arguments:
    //  N/A
@@ -364,7 +414,23 @@ public:
    //  N/A
    //
    //************************************************************************************************************************************************
-   void DrawShips();
+   void DrawShipsAttackableArea();
+
+   //************************************************************************************************************************************************
+   //
+   // Method Name: DrawShips
+   //
+   // Description:
+   //  Draw the ships for the battle map onto the back buffer.
+   //
+   // Arguments:
+   //  theGraphics - TODO: Add description.
+   //
+   // Return:
+   //  N/A
+   //
+   //************************************************************************************************************************************************
+   void DrawShips(Graphics& theGraphics);
 
    //************************************************************************************************************************************************
    //
@@ -374,29 +440,13 @@ public:
    //  Draw the tile selector for the battle map onto the back buffer.
    //
    // Arguments:
-   //  N/A
+   //  theGraphics - TODO: Add description.
    //
    // Return:
    //  N/A
    //
    //************************************************************************************************************************************************
-   void DrawTileSelector();
-
-   //************************************************************************************************************************************************
-   //
-   // Method Name: Update
-   //
-   // Description:
-   //  TODO: Add description.
-   //
-   // Arguments:
-   //  theElpasedTime - TODO: Add description.
-   //
-   // Return:
-   //  N/A
-   //
-   //************************************************************************************************************************************************
-   void Update(float theElpasedTime);
+   void DrawTileSelector(Graphics& theGraphics);
 
 protected:
 
@@ -453,6 +503,9 @@ private:
    // Vector the holds the column x row for tile information.
    std::vector<std::pair<int, int>> mMoveableTiles;
 
+   // Vector the holds the column x row for tile information.
+   std::vector<std::pair<int, int>> mAttackableTiles;
+
    // Vector of pointers to ships that represents the players selected ships for the battle.
    std::vector<Ship*> mpPlayerShips;
 
@@ -467,6 +520,8 @@ private:
 
    // Tracks the current battle state to determine what action to perform when processing is occurring.
    BattleState mCurrentBattleState;
+
+   AnimatedSprite* mpTileSelectorImage;
 
    //************************************************************************************************************************************************
    // End Member Vairable Declarations

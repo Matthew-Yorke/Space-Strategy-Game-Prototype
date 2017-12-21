@@ -1,15 +1,9 @@
-﻿  AnimatedSprite.cpp
-  BattleMenu.cpp
-  Crew.cpp
+﻿  BattleMap.cpp
   Game.cpp
-  Graphics.cpp
-  Main.cpp
-  BattleMap.cpp
-  PlayerInventories.cpp
-  Ship.cpp
-  Sprite.cpp
   Generating code
-  All 563 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  6 of 564 functions ( 1.1%) were compiled, the rest were copied from previous compilation.
+    1 functions were new in current compilation
+    3 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
 allegro_monolith-static.lib(allegro.obj) : warning LNK4099: PDB 'allegro_monolith.pdb' was not found with 'allegro_monolith-static.lib(allegro.obj)' or at 'C:\Users\matt\Documents\Visual Studio 2017\Projects\Space Strategy Game Prototype\x64\Release\allegro_monolith.pdb'; linking object as if no debug info
 allegro_monolith-static.lib(bitmap.obj) : warning LNK4099: PDB 'allegro_monolith.pdb' was not found with 'allegro_monolith-static.lib(bitmap.obj)' or at 'C:\Users\matt\Documents\Visual Studio 2017\Projects\Space Strategy Game Prototype\x64\Release\allegro_monolith.pdb'; linking object as if no debug info

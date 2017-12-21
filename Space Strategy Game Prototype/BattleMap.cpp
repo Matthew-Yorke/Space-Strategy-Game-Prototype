@@ -57,6 +57,15 @@ BattleMap::BattleMap(Graphics& theGraphics)
    
    // Set the default state to start determining which ship will go first.
    mCurrentBattleState = BattleState::DETERMINING;
+
+   mpTileSelectorImage = new AnimatedSprite(theGraphics,
+                                            "Images/TileSelector.png",
+                                            0,
+                                            0,
+                                            64,
+                                            64,
+                                            2,
+                                            2);
 }
 
 //***************************************************************************************************************************************************
@@ -96,6 +105,8 @@ BattleMap::~BattleMap()
 
    // Clean up allocated memory used for the battle menu.
    delete mpBattleMenu;
+
+   delete mpTileSelectorImage;
 }
 
 //***************************************************************************************************************************************************
@@ -127,6 +138,12 @@ void BattleMap::UpKeyPressed()
          MoveTileSelector(OverallProjectConstants::Direction::UP);
          break;
       }
+      case BattleState::ATTACK:
+      {
+         // Move the tile selector one tile up.
+         MoveTileSelector(OverallProjectConstants::Direction::UP);
+         break;
+      }
       // All other states not defined here or an error state occured.
       default:
       {
@@ -151,6 +168,12 @@ void BattleMap::LeftKeyPressed()
    {
       // The battle state is in the ship movement selector state.
       case BattleState::MOVE:
+      {
+         // Move the tile selector one tile left.
+         MoveTileSelector(OverallProjectConstants::Direction::LEFT);
+         break;
+      }
+      case BattleState::ATTACK:
       {
          // Move the tile selector one tile left.
          MoveTileSelector(OverallProjectConstants::Direction::LEFT);
@@ -193,6 +216,12 @@ void BattleMap::DownKeyPressed()
          MoveTileSelector(OverallProjectConstants::Direction::DOWN);
          break;
       }
+      case BattleState::ATTACK:
+      {
+         // Move the tile selector one tile down.
+         MoveTileSelector(OverallProjectConstants::Direction::DOWN);
+         break;
+      }
       // All other states not defined here or an error state occured.
       default:
       {
@@ -217,6 +246,13 @@ void BattleMap::RightKeyPressed()
    {
       // The battle state is in the ship movement selector state.
       case BattleState::MOVE:
+      {
+         // Move the tile selector on tile to the right.
+         MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
+         break;
+      }
+      // The battle state is in the ship movement selector state.
+      case BattleState::ATTACK:
       {
          // Move the tile selector on tile to the right.
          MoveTileSelector(OverallProjectConstants::Direction::RIGHT);
@@ -259,8 +295,25 @@ void BattleMap::ActionKeyPressed()
       case BattleState::MOVE:
       {
          // Move the ship to the selected tile and then revert back to the main battle menu state.
-         MoveShipToSelectedTile();
-         mCurrentBattleState = BattleState::MENU_MAIN;
+         bool validMove = MoveShipToSelectedTile();
+
+         if(validMove == true)
+         {
+            mCurrentBattleState = BattleState::MENU_MAIN;
+         }
+
+         break;
+      }
+      case BattleState::ATTACK:
+      {
+         // Move the ship to the selected tile and then revert back to the main battle menu state.
+         bool validMove = AttackSelectedTile();
+
+         if(validMove == true)
+         {
+            mCurrentBattleState = BattleState::MENU_MAIN;
+         }
+
          break;
       }
       // All other states not defined here or an error state occured.
@@ -287,6 +340,12 @@ void BattleMap::CancelKeyPressed()
    {
       // The battle state is in the ship movement selector state.
       case BattleState::MOVE:
+      {
+         // Change the current battle state to revert back to the main battle menu state.
+         mCurrentBattleState = BattleState::MENU_MAIN;
+         break;
+      }
+      case BattleState::ATTACK:
       {
          // Change the current battle state to revert back to the main battle menu state.
          mCurrentBattleState = BattleState::MENU_MAIN;
@@ -516,8 +575,8 @@ void BattleMap::MoveTileSelector(OverallProjectConstants::Direction theDirection
 void BattleMap::CenterTileSelector()
 {
    // Set the tile selector column and row to be the same as the ship that is currently taking its action turn.
-   mTileSelectorColumn = mpCurrentShipsActionTurn->mShipTileColumn;
-   mTileSelectorRow = mpCurrentShipsActionTurn->mShipTileRow;
+   mTileSelectorColumn = mpCurrentShipsActionTurn->GetTileColumn();
+   mTileSelectorRow = mpCurrentShipsActionTurn->GetTileRow();
 }
 
 //***************************************************************************************************************************************************
@@ -530,13 +589,11 @@ void BattleMap::CenterTileSelector()
 //***************************************************************************************************************************************************
 void BattleMap::CalculateShipsMoveableArea()
 {
-   // Note: Test code. This needs to be determined elsewhere.
-   mpCurrentShipsActionTurn = mpPlayerShips.front();
-
    // Stop any unecessary processing in finding which tiles are needed by knowing that there are areas already found in the Already Found areas
    // container. THe reasoning is becuase the Already Found container will be cleared once the ship moves, allowing processing for the next set of
    // areas to be found at the new ship location.
-   if (mMoveableTiles.empty() == true)
+   if ((mpCurrentShipsActionTurn != nullptr) &&
+       (mMoveableTiles.empty() == true))
    {
       // Holds the list of tile locations to investigate from for more moveable spaces.
       std::vector<std::pair<int, int>> investigateAreas;
@@ -544,17 +601,17 @@ void BattleMap::CalculateShipsMoveableArea()
       std::vector<std::pair<int, int>> newInvestigateAreas;
 
       // Add the ships location as the starting investigate area.
-      investigateAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->mShipTileColumn,
-                                                mpCurrentShipsActionTurn->mShipTileRow));
+      investigateAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                                mpCurrentShipsActionTurn->GetTileRow()));
 
       // Add the ships location as a tile where it can move to.
-      mMoveableTiles.push_back(std::make_pair(mpCurrentShipsActionTurn->mShipTileColumn,
-                                              mpCurrentShipsActionTurn->mShipTileRow));
-   
+      mMoveableTiles.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                              mpCurrentShipsActionTurn->GetTileRow()));
+
       // For as many movement spaces that are left, check which tiles are needed in the moveable tile container for the tiles the ship can traverse
       // to.
       for (int currentMovementDistance = 0;
-           currentMovementDistance < mpCurrentShipsActionTurn->mMovementDistance;
+           currentMovementDistance < mpCurrentShipsActionTurn->GetMovementDistance();
            currentMovementDistance++)
       {
          // For each tile that is to be investigated this iteration, search for each adjacent tile to check if it's already added to the moveable
@@ -569,7 +626,8 @@ void BattleMap::CalculateShipsMoveableArea()
                                                        mMoveableTiles.end(),
                                                        std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
                                                                       (currentInvestigateArea)->second));
-            if (foundMoveableTileIterator == mMoveableTiles.end())
+            if (foundMoveableTileIterator == mMoveableTiles.end() &&
+                IsTileOccupied((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE, (currentInvestigateArea)->second) == false)
             {
                mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
                                                        (currentInvestigateArea)->second));
@@ -579,10 +637,11 @@ void BattleMap::CalculateShipsMoveableArea()
 
             // Check the tile below of the investigate tile.
             foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                                 mMoveableTiles.end(),
-                                                 std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                                (currentInvestigateArea)->second));
-            if (foundMoveableTileIterator == mMoveableTiles.end())
+                                                  mMoveableTiles.end(),
+                                                  std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                                 (currentInvestigateArea)->second));
+            if (foundMoveableTileIterator == mMoveableTiles.end() &&
+                IsTileOccupied((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE, (currentInvestigateArea)->second) == false)
             {
                mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
                                                        (currentInvestigateArea)->second));
@@ -592,10 +651,11 @@ void BattleMap::CalculateShipsMoveableArea()
 
             // Check the tile to the left of the investigate tile.
             foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                                       mMoveableTiles.end(),
-                                                       std::make_pair((currentInvestigateArea)->first,
-                                                                      (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
-            if (foundMoveableTileIterator == mMoveableTiles.end())
+                                                  mMoveableTiles.end(),
+                                                  std::make_pair((currentInvestigateArea)->first,
+                                                                 (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if (foundMoveableTileIterator == mMoveableTiles.end() &&
+                IsTileOccupied((currentInvestigateArea)->first, (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE) == false)
             {
                mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
                                                        (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
@@ -608,7 +668,8 @@ void BattleMap::CalculateShipsMoveableArea()
                                                   mMoveableTiles.end(),
                                                   std::make_pair((currentInvestigateArea)->first,
                                                                  (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
-            if (foundMoveableTileIterator == mMoveableTiles.end())
+            if (foundMoveableTileIterator == mMoveableTiles.end() &&
+                IsTileOccupied((currentInvestigateArea)->first, (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE) == false)
             {
                mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
                                                        (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
@@ -616,7 +677,240 @@ void BattleMap::CalculateShipsMoveableArea()
                                                             (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
             }
          }
-   
+
+         // Transfer the data from the new investigate areas container to the investigate areas container for the next iteratio to know which tiles
+         // to search from.
+         investigateAreas.clear();
+         investigateAreas = newInvestigateAreas;
+         newInvestigateAreas.clear();
+      }
+
+      // Clear the investigate area container.
+      investigateAreas.clear();
+   }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: CalculateShipsAttackableArea
+//
+// Description:
+//  TODO: Add description.
+//
+//***************************************************************************************************************************************************
+void BattleMap::CalculateShipsAttackableArea()
+{
+   // Stop any unecessary processing in finding which tiles are needed by knowing that there are areas already found in the Already Found areas
+   // container. THe reasoning is becuase the Already Found container will be cleared once the ship moves, allowing processing for the next set of
+   // areas to be found at the new ship location.
+   if ((mpCurrentShipsActionTurn != nullptr) && (mAttackableTiles.empty() == true))
+   {
+      // Holds the list of tile locations to investigate from for more moveable spaces.
+      std::vector<std::pair<int, int>> investigateAreas;
+      // List of new areas found from the investigate areas container.
+      std::vector<std::pair<int, int>> newInvestigateAreas;
+      std::vector<std::pair<int, int>> invalidAreas;
+
+      // Add the ships location as the starting investigate area.
+      investigateAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                                mpCurrentShipsActionTurn->GetTileRow()));
+
+      // Add the ships location as a tile where it can move to.
+      invalidAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                            mpCurrentShipsActionTurn->GetTileRow()));
+
+      // For as many movement spaces that are left, check which tiles are needed in the moveable tile container for the tiles the ship can traverse
+      // to.
+      for (int currentInvalidAttackableDistance = 0;
+           currentInvalidAttackableDistance < mpCurrentShipsActionTurn->GetWeaponMinimumRange();
+           currentInvalidAttackableDistance++)
+      {
+         // For each tile that is to be investigated this iteration, search for each adjacent tile to check if it's already added to the moveable
+         // tiles container. If they aren't found in the moveable tiles container, then add them to the moveable tiles and new areas to investigate
+         // containers so the next iteration will know what tiles are already found and which tiles to check next respectfully.
+         for (auto currentInvestigateArea = investigateAreas.begin();
+              currentInvestigateArea < investigateAreas.end();
+              currentInvestigateArea++)
+         {
+            // Check the tile above of the investigate tile.
+            auto foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                                invalidAreas.end(),
+                                                                std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                                (currentInvestigateArea)->second));
+            if (foundInvalidAttackableTileIterator == invalidAreas.end())
+            {
+               invalidAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                       (currentInvestigateArea)->second));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+
+            // Check the tile below of the investigate tile.
+            foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                           invalidAreas.end(),
+                                                           std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                           (currentInvestigateArea)->second));
+            if (foundInvalidAttackableTileIterator == invalidAreas.end())
+            {
+               invalidAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                     (currentInvestigateArea)->second));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+
+            // Check the tile to the left of the investigate tile.
+            foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                           invalidAreas.end(),
+                                                           std::make_pair((currentInvestigateArea)->first,
+                                                           (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if (foundInvalidAttackableTileIterator == invalidAreas.end())
+            {
+               invalidAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                     (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+
+            // Check the tile to the right of the investigate tile.
+            foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                           invalidAreas.end(),
+                                                           std::make_pair((currentInvestigateArea)->first,
+                                                           (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if (foundInvalidAttackableTileIterator == invalidAreas.end())
+            {
+               invalidAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                     (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+         }
+
+         // Transfer the data from the new investigate areas container to the investigate areas container for the next iteratio to know which tiles
+         // to search from.
+         investigateAreas.clear();
+         investigateAreas = newInvestigateAreas;
+         newInvestigateAreas.clear();
+      }
+
+      // Clear the investigate area container.
+      investigateAreas.clear();
+
+      //*********************************************************************************************************************************************
+
+      // Add the ships location as the starting investigate area.
+      investigateAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                                mpCurrentShipsActionTurn->GetTileRow()));
+
+      // For as many movement spaces that are left, check which tiles are needed in the moveable tile container for the tiles the ship can traverse
+      // to.
+      for (int currentAttackableDistance = 0;
+           currentAttackableDistance < mpCurrentShipsActionTurn->GetWeaponMaximumRange();
+           currentAttackableDistance++)
+      {
+         // For each tile that is to be investigated this iteration, search for each adjacent tile to check if it's already added to the moveable
+         // tiles container. If they aren't found in the moveable tiles container, then add them to the moveable tiles and new areas to investigate
+         // containers so the next iteration will know what tiles are already found and which tiles to check next respectfully.
+         for (auto currentInvestigateArea = investigateAreas.begin();
+              currentInvestigateArea < investigateAreas.end();
+              currentInvestigateArea++)
+         {
+            // Check the tile above of the investigate tile.
+            auto foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                                invalidAreas.end(),
+                                                                std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                                               (currentInvestigateArea)->second));
+            auto foundValidAttackableTileIterator = std::find(mAttackableTiles.begin(),
+                                                              mAttackableTiles.end(),
+                                                              std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                                             (currentInvestigateArea)->second));
+            if ((foundInvalidAttackableTileIterator == invalidAreas.end()) &&
+                (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               mAttackableTiles.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                         (currentInvestigateArea)->second));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+            else if ((foundInvalidAttackableTileIterator != invalidAreas.end()) &&
+                     (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+
+            // Check the tile below of the investigate tile.
+            foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                           invalidAreas.end(),
+                                                           std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                           (currentInvestigateArea)->second));
+            foundValidAttackableTileIterator = std::find(mAttackableTiles.begin(),
+                                                         mAttackableTiles.end(),
+                                                         std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                         (currentInvestigateArea)->second));
+            if ((foundInvalidAttackableTileIterator == invalidAreas.end()) &&
+                (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               mAttackableTiles.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                         (currentInvestigateArea)->second));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+            else if ((foundInvalidAttackableTileIterator != invalidAreas.end()) &&
+                     (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+                                                            (currentInvestigateArea)->second));
+            }
+
+            // Check the tile to the left of the investigate tile.
+            foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                           invalidAreas.end(),
+                                                           std::make_pair((currentInvestigateArea)->first,
+                                                                          (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            foundValidAttackableTileIterator = std::find(mAttackableTiles.begin(),
+                                                         mAttackableTiles.end(),
+                                                         std::make_pair((currentInvestigateArea)->first,
+                                                                        (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if ((foundInvalidAttackableTileIterator == invalidAreas.end()) &&
+                (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               mAttackableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                         (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+            else if ((foundInvalidAttackableTileIterator != invalidAreas.end()) &&
+                     (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+
+            // Check the tile to the right of the investigate tile.
+            foundInvalidAttackableTileIterator = std::find(invalidAreas.begin(),
+                                                           invalidAreas.end(),
+                                                           std::make_pair((currentInvestigateArea)->first,
+                                                                          (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            foundValidAttackableTileIterator = std::find(mAttackableTiles.begin(),
+                                                         mAttackableTiles.end(),
+                                                         std::make_pair((currentInvestigateArea)->first,
+                                                                        (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            if ((foundInvalidAttackableTileIterator == invalidAreas.end()) &&
+                (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               mAttackableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                         (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+            else if ((foundInvalidAttackableTileIterator != invalidAreas.end()) &&
+                     (foundValidAttackableTileIterator == mAttackableTiles.end()))
+            {
+               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+                                                            (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            }
+         }
+
          // Transfer the data from the new investigate areas container to the investigate areas container for the next iteratio to know which tiles
          // to search from.
          investigateAreas.clear();
@@ -637,8 +931,10 @@ void BattleMap::CalculateShipsMoveableArea()
 //  Move the current ship that is taking its action turn to a new tile that is within the bounds of its movement distance.
 //
 //***************************************************************************************************************************************************
-void BattleMap::MoveShipToSelectedTile()
+bool BattleMap::MoveShipToSelectedTile()
 {
+   bool successfulMove = false;
+
    // Check if the selected are the tile selector is at is within the bounds of moveable tiles.
    auto foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
                                               mMoveableTiles.end(),
@@ -647,14 +943,105 @@ void BattleMap::MoveShipToSelectedTile()
    if(foundMoveableTileIterator != mMoveableTiles.end())
    {
       // The tile selector selected a valid moveable tile so the ship is moved to where the tile selector is.
-      mpCurrentShipsActionTurn->mShipTileColumn = mTileSelectorColumn;
-      mpCurrentShipsActionTurn->mShipTileRow  = mTileSelectorRow;
+      mpCurrentShipsActionTurn->SetTileColumn(mTileSelectorColumn);
+      mpCurrentShipsActionTurn->SetTileRow(mTileSelectorRow);
 
       // Clear the moveable tiles container as this will need to be updated as new movement needs to be calculated.
       mMoveableTiles.clear();
 
-      mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->mShipTileColumn * 64, mpCurrentShipsActionTurn->mShipTileRow * 64);
+      // TODO: Remove when necessary post testing.
+      mAttackableTiles.clear();
+
+      mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->GetTileColumn() * 64, mpCurrentShipsActionTurn->GetTileRow() * 64);
+
+      // Indicate that the move was successful.
+      successfulMove = true;
    }
+
+   return successfulMove;
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: AttackSelectedTile
+//
+// Description:
+//  Move the current ship that is taking its action turn to a new tile that is within the bounds of its movement distance.
+//
+//***************************************************************************************************************************************************
+bool BattleMap::AttackSelectedTile()
+{
+   bool successfulMove = false;
+
+   // Check if the selected are the tile selector is at is within the bounds of moveable tiles.
+   auto foundAttackableTileIterator = std::find(mAttackableTiles.begin(),
+                                                mAttackableTiles.end(),
+                                                std::make_pair(mTileSelectorColumn,
+                                                               mTileSelectorRow));
+   if(foundAttackableTileIterator != mAttackableTiles.end())
+   {
+      // Iterate through the list of player ships and draw them at the tile location the ship is indicated to be at.
+      for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end();)
+      {
+         if ((*ShipIterator)->GetTileColumn() == foundAttackableTileIterator->first &&
+             (*ShipIterator)->GetTileRow() == foundAttackableTileIterator->second)
+         {
+            (*ShipIterator)->TakeDamage(mpCurrentShipsActionTurn->GetWeaponDamage());
+
+            if ((*ShipIterator)->GetCurrentHealth() <= 0)
+            {
+               delete *ShipIterator;
+               ShipIterator = mpPlayerShips.erase(ShipIterator);
+            }
+            else
+            {
+               ShipIterator++;
+            }
+         }
+         else
+         {
+            ShipIterator++;
+         }
+      }
+      
+      // Iterate through the list of enemy ships and draw them at the tile location the ship is indicated to be at.
+      for (auto ShipIterator = mpEnemyShips.begin(); ShipIterator != mpEnemyShips.end();)
+      {
+         if ((*ShipIterator)->GetTileColumn() == foundAttackableTileIterator->first &&
+             (*ShipIterator)->GetTileRow() == foundAttackableTileIterator->second)
+         {
+            (*ShipIterator)->TakeDamage(mpCurrentShipsActionTurn->GetWeaponDamage());
+
+            if ((*ShipIterator)->GetCurrentHealth() <= 0)
+            {
+               delete *ShipIterator;
+               ShipIterator = mpEnemyShips.erase(ShipIterator);
+            }
+            else
+            {
+               ShipIterator++;
+            }
+         }
+         else
+         {
+            ShipIterator++;
+         }
+      }
+
+
+      // Clear the moveable tiles container as this will need to be updated as new movement needs to be calculated.
+      mMoveableTiles.clear();
+
+      // TODO: Remove when necessary post testing.
+      mAttackableTiles.clear();
+
+      mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->GetTileColumn() * 64, mpCurrentShipsActionTurn->GetTileRow() * 64);
+
+      // Indicate that the move was successful.
+      successfulMove = true;
+   }
+
+   return successfulMove;
 }
 
 //***************************************************************************************************************************************************
@@ -715,9 +1102,15 @@ void BattleMap::DetermineNextActionTurn()
             // Set that this ship is now going to take its action turn.
             mpCurrentShipsActionTurn = (*ShipIterator);
             // Set the battle menu to display to the right of the ship.
-            mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->mShipTileColumn * 64, mpCurrentShipsActionTurn->mShipTileRow * 64);
+            mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->GetTileColumn() * 64, mpCurrentShipsActionTurn->GetTileRow() * 64);
+            // Now calculate the moveable area for this ship.
+            CalculateShipsMoveableArea();
+            //
+            CalculateShipsAttackableArea();
             // Change the battle state to be the main battle menu for this ship to start taking its action turn.
             mCurrentBattleState = BattleState::MENU_MAIN;
+            // Break from the for loop.
+            break;
          }
          // The ship being checked has not reached the action level where it can take its action turn.
          else
@@ -727,6 +1120,47 @@ void BattleMap::DetermineNextActionTurn()
          }
       }
    }
+}
+
+//***************************************************************************************************************************************************
+//
+// Method Name: Update
+//
+// Description:
+//  TODO: Add description.
+//
+//***************************************************************************************************************************************************
+void BattleMap::Update(float theElapsedTime)
+{
+   mpBattleMenu->Update(theElapsedTime);
+   mpTileSelectorImage->Update(theElapsedTime);
+}
+
+bool BattleMap::IsTileOccupied(int theColumn, int theRow)
+{
+   bool isOccupied = false;
+
+   // Iterate through the list of player ships and draw them at the tile location the ship is indicated to be at.
+   for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end(); ShipIterator++)
+   {
+      if (theColumn == (*ShipIterator)->GetTileColumn() &&
+          theRow == (*ShipIterator)->GetTileRow())
+      {
+         isOccupied = true;
+      }
+   }
+
+   // Iterate through the list of enemy ships and draw them at the tile location the ship is indicated to be at.
+   for (auto ShipIterator = mpEnemyShips.begin(); ShipIterator != mpEnemyShips.end(); ShipIterator++)
+   {
+      if (theColumn == (*ShipIterator)->GetTileColumn() &&
+          theRow == (*ShipIterator)->GetTileRow())
+      {
+         isOccupied = true;
+      }
+   }
+
+   return isOccupied;
 }
 
 //***************************************************************************************************************************************************
@@ -747,14 +1181,14 @@ void BattleMap::Draw(Graphics& theGraphics)
       {
          // Draw the tile for the map and the ships on the map.
          DrawBattleMapTiles();
-         DrawShips();
+         DrawShips(theGraphics);
          break;
       }
       case BattleState::MENU_MAIN:
       {
          // Draw the tile for the map, the ships on the map, and the battle menu.
          DrawBattleMapTiles();
-         DrawShips();
+         DrawShips(theGraphics);
          mpBattleMenu->DrawMenu();
          mpBattleMenu->DrawCursor(theGraphics);
          break;
@@ -764,15 +1198,23 @@ void BattleMap::Draw(Graphics& theGraphics)
          // Draw the tile for the map, the moveable area that the ship can traverse to, the ships on the map, and the tile selector.
          DrawBattleMapTiles();
          DrawShipsMoveableArea();
-         DrawShips();
-         DrawTileSelector();
+         DrawShips(theGraphics);
+         DrawTileSelector(theGraphics);
+         break;
+      }
+      case BattleState::ATTACK:
+      {
+         DrawBattleMapTiles();
+         DrawShipsAttackableArea();
+         DrawShips(theGraphics);
+         DrawTileSelector(theGraphics);
          break;
       }
       default:
       {
          // Draw the tile for the map and the ships on the map.
          DrawBattleMapTiles();
-         DrawShips();
+         DrawShips(theGraphics);
       }
    }
 }
@@ -789,7 +1231,7 @@ void BattleMap::DrawBattleMapTiles()
 {
    // Load the image used for the tiles.
    ALLEGRO_BITMAP* pTileImage;
-   pTileImage = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/SpaceTile.png");
+   pTileImage = al_load_bitmap("Images/SpaceTile.png");
   
    // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
    al_convert_mask_to_alpha(pTileImage,
@@ -829,7 +1271,7 @@ void BattleMap::DrawShipsMoveableArea()
 {
    // Load the image used for the moveable tile location.
    ALLEGRO_BITMAP* pMoveableTile;
-   pMoveableTile = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/MoveableAreaTile.png");
+   pMoveableTile = al_load_bitmap("Images/MoveableAreaTile.png");
    
    // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
    al_convert_mask_to_alpha(pMoveableTile,
@@ -852,6 +1294,39 @@ void BattleMap::DrawShipsMoveableArea()
 
 //***************************************************************************************************************************************************
 //
+// Method Name: DrawShipsAttackableArea
+//
+// Description:
+//  TODO: Add description.
+//
+//***************************************************************************************************************************************************
+void BattleMap::DrawShipsAttackableArea()
+{
+   // Load the image used for the moveable tile location.
+   ALLEGRO_BITMAP* pAttackableTile;
+   pAttackableTile = al_load_bitmap("Images/AttackableAreaTile.png");
+
+   // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
+   al_convert_mask_to_alpha(pAttackableTile,
+                            OverallProjectConstants::MAGENTA_COLOR);
+
+   // Iterate through the list of moveable tiles and draw indication of where the player can select.
+   for (auto currentAttackableTileIterator = mAttackableTiles.begin();
+        currentAttackableTileIterator < mAttackableTiles.end();
+        currentAttackableTileIterator++)
+   {
+      al_draw_bitmap(pAttackableTile,
+                     currentAttackableTileIterator->first * OverallProjectConstants::TILE_WIDTH,
+                     currentAttackableTileIterator->second * OverallProjectConstants::TILE_HEIGHT,
+                     BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+   }
+
+   // Clean up memory by destroying the bitmap.
+   al_destroy_bitmap(pAttackableTile);
+}
+
+//***************************************************************************************************************************************************
+//
 // Method Name: DrawShips
 //
 // Description:
@@ -859,24 +1334,18 @@ void BattleMap::DrawShipsMoveableArea()
 //  locations the ships indicate they are at.
 //
 //***************************************************************************************************************************************************
-void BattleMap::DrawShips()
+void BattleMap::DrawShips(Graphics& theGraphics)
 {
    // Iterate through the list of player ships and draw them at the tile location the ship is indicated to be at.
    for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end(); ShipIterator++)
    {
-      al_draw_bitmap((*ShipIterator)->mShipImage,
-                     (*ShipIterator)->mShipTileColumn * OverallProjectConstants::TILE_WIDTH,
-                     (*ShipIterator)->mShipTileRow * OverallProjectConstants::TILE_HEIGHT,
-                     BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+      (*ShipIterator)->Draw(theGraphics);
    }
 
    // Iterate through the list of enemy ships and draw them at the tile location the ship is indicated to be at.
    for (auto ShipIterator = mpEnemyShips.begin(); ShipIterator != mpEnemyShips.end(); ShipIterator++)
    {
-      al_draw_bitmap((*ShipIterator)->mShipImage,
-                     (*ShipIterator)->mShipTileColumn * OverallProjectConstants::TILE_WIDTH,
-                     (*ShipIterator)->mShipTileRow * OverallProjectConstants::TILE_HEIGHT,
-                     BattleMapConstants::DRAW_BITMAP_NO_FLAG);
+      (*ShipIterator)->Draw(theGraphics);
    }
 }
 
@@ -888,37 +1357,12 @@ void BattleMap::DrawShips()
 //  Draw the tile selector by drawing the tile selector where it indicates it's currently located at.
 //
 //***************************************************************************************************************************************************
-void BattleMap::DrawTileSelector()
+void BattleMap::DrawTileSelector(Graphics& theGraphics)
 {
    // Load the image used for the tile selector.
-   ALLEGRO_BITMAP* pTileSelectorImage;
-   pTileSelectorImage = al_load_bitmap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/Images/TileSelector.png");
-
-   // Create a color mask for the magenta color which will amke any magenta color in the image to be completely transparent.
-   al_convert_mask_to_alpha(pTileSelectorImage,
-                            OverallProjectConstants::MAGENTA_COLOR);
-
-   // Draw the tile selector based on which tile column and and row it is located at.
-   al_draw_bitmap(pTileSelectorImage,
-                  mTileSelectorColumn * OverallProjectConstants::TILE_WIDTH,
-                  mTileSelectorRow * OverallProjectConstants::TILE_HEIGHT,
-                  BattleMapConstants::DRAW_BITMAP_NO_FLAG);
-
-   // Clean up memory by destroying the bitmap.
-   al_destroy_bitmap(pTileSelectorImage);
-}
-
-//***************************************************************************************************************************************************
-//
-// Method Name: Update
-//
-// Description:
-//  TODO: Add description.
-//
-//***************************************************************************************************************************************************
-void BattleMap::Update(float theElapsedTime)
-{
-   mpBattleMenu->Update(theElapsedTime);
+   mpTileSelectorImage->Draw(theGraphics,
+                             mTileSelectorColumn * OverallProjectConstants::TILE_WIDTH,
+                             mTileSelectorRow * OverallProjectConstants::TILE_HEIGHT);
 }
 
 //***************************************************************************************************************************************************

@@ -179,6 +179,7 @@
     <ClCompile Include="PlayerInventories.cpp" />
     <ClCompile Include="Ship.cpp" />
     <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="Weapon.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimatedSprite.h" />

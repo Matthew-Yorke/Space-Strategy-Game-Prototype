@@ -179,13 +179,22 @@ void Game::GameLoop()
    // Tracks what the next event will be from the event queue.
    ALLEGRO_EVENT nextEvent;
 
+   // Set up the graphics used in this game.
    Graphics graphics(mpDisplay);
 
    // Note: This is purely to test the map file for loading and drawing the map that is currently loaded.
    BattleMap* bm = new BattleMap(graphics);
-   bm->LoadMap("C:/Users/matt/Documents/Visual Studio 2017/Projects/Space Strategy Game Prototype/Space Strategy Game Prototype/BattleMaps/PrototypeBattleMap.txt");
-   Ship* StarterShip = new Ship(false, 3, 2, 1, 1);
+   bm->LoadMap("BattleMaps/PrototypeBattleMap.txt");
+   Weapon* weapon = new Weapon(graphics, "Images/Weapon1.png", 2, 5, 5);
+   Ship* StarterShip = new Ship(graphics, false, 3, 2, 1, 1);
+   StarterShip->AddWeapon(weapon);
    bm->AddPlayerShip(StarterShip);
+   Weapon* weapon2 = new Weapon(graphics, "Images/Weapon2.png", 0, 3, 5);
+   Ship* SecondShip = new Ship(graphics, false, 2, 2, 1, 1);
+   SecondShip->AddWeapon(weapon2);
+   SecondShip->SetTileRow(5);
+   SecondShip->SetTileColumn(5);
+   bm->AddPlayerShip(SecondShip);
    bool redraw = false;
    float lastUpdateTime = static_cast<float>(al_current_time());
 
@@ -265,7 +274,7 @@ void Game::GameLoop()
             if (nextEvent.timer.source == mpTimer)
             { 
                bm->DetermineNextActionTurn();
-               bm->CalculateShipsMoveableArea();
+               //bm->CalculateShipsMoveableArea();
 
                const float currentTime = static_cast<float>(al_current_time());
                bm->Update(currentTime - lastUpdateTime);
@@ -276,7 +285,8 @@ void Game::GameLoop()
       }
       while (!al_is_event_queue_empty(mpEventQueue));
 
-      if (redraw)
+      // Redraw 
+      if (redraw == true)
       {
          redraw = false;
 
