@@ -21,6 +21,13 @@
 #include "OverallProjectConstants.h"
 #include "BattleMenu.h"
 
+struct TileNode
+{
+   int Column;
+   int Row;
+   int DistanceFromCurrentShip;
+};
+
 class BattleMap
 {
    //************************************************************************************************************************************************
@@ -269,6 +276,8 @@ public:
    //************************************************************************************************************************************************
    void CalculateShipsAttackableArea();
 
+   void CalculateMovementPath(TileNode* theEndTile);
+
    //************************************************************************************************************************************************
    //
    // Method Name: MoveShipToSelectedTile
@@ -479,14 +488,16 @@ private:
    // MENU_MAIN - Used to determine the player is currently selecting from the menu's main window.
    // MOVE - Used to determine where the player can move a ship.
    // ATTACK - Used to determine the player is selecting an attack area.
-   enum BattleState { DETERMINING, MENU_MAIN, MOVE, ATTACK};
+   enum BattleState { DETERMINING, MENU_MAIN, MOVE, ATTACK, MOVE_ANIMATION};
 
    // A dynamic 2-Dimensional array the holds tile information for each tile in the battle map. This is created upon a read of a battle map file and
    // deleted upon class destruction or before reading a new battle map file.
    //
    // Note: This is prototype of the map array, will need to use a structure to hold other information about a tile of the map such as if the tile
    //       is already occuppied.
-   int** mpBattleMapArray;
+   //int** mpBattleMapArray;
+
+   std::vector<TileNode*> mBattleMapVector;
 
    // The number of columns of tiles for the battle map.
    int mNumberOfTileColumns;
@@ -501,7 +512,10 @@ private:
    int mTileSelectorRow;
 
    // Vector the holds the column x row for tile information.
-   std::vector<std::pair<int, int>> mMoveableTiles;
+   std::vector<TileNode*>/*std::pair<int, int>>*/ mMoveableTiles;
+   std::vector<TileNode*> mMovementPath;
+   float mMoveTime;
+   float mElapsedTime;
 
    // Vector the holds the column x row for tile information.
    std::vector<std::pair<int, int>> mAttackableTiles;

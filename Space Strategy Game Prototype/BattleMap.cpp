@@ -26,6 +26,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 //***************************************************************************************************************************************************
 // Start Public Method Definitions
@@ -66,6 +67,9 @@ BattleMap::BattleMap(Graphics& theGraphics)
                                             64,
                                             2,
                                             2);
+
+   mMoveTime = 1.0f / 2.0f;
+   mElapsedTime = 0.0f;
 }
 
 //***************************************************************************************************************************************************
@@ -79,15 +83,15 @@ BattleMap::BattleMap(Graphics& theGraphics)
 BattleMap::~BattleMap()
 {
    // Clean up any allocated memory in the Battle Map container.
-   for (int currentTileRow = 0;
-      currentTileRow < mNumberOfTileRows;
-      currentTileRow++)
-   {
-      delete[] mpBattleMapArray[currentTileRow];
-      mpBattleMapArray[currentTileRow] = nullptr;
-   }
-   delete[] mpBattleMapArray;
-   mpBattleMapArray = nullptr;
+   //for (int currentTileRow = 0;
+   //   currentTileRow < mNumberOfTileRows;
+   //   currentTileRow++)
+   //{
+   //   delete[] mpBattleMapArray[currentTileRow];
+   //   mpBattleMapArray[currentTileRow] = nullptr;
+   //}
+   //delete[] mpBattleMapArray;
+   //mpBattleMapArray = nullptr;
 
    // Clean up any allocated memory in the Player Ship container.
    while (mpPlayerShips.empty() == false)
@@ -299,7 +303,7 @@ void BattleMap::ActionKeyPressed()
 
          if(validMove == true)
          {
-            mCurrentBattleState = BattleState::MENU_MAIN;
+            mCurrentBattleState = BattleState::MOVE_ANIMATION;
          }
 
          break;
@@ -372,13 +376,13 @@ void BattleMap::CancelKeyPressed()
 void BattleMap::LoadMap(std::string theBattleMapFileName)
 {
    // Delete any previously allocated memory in the battle map array.
-   for (int currentTileRow = 0;
-        currentTileRow < mNumberOfTileRows;
-        currentTileRow++)
-   {
-      delete[] mpBattleMapArray[currentTileRow];
-   }
-   delete[] mpBattleMapArray;
+   //for (int currentTileRow = 0;
+   //     currentTileRow < mNumberOfTileRows;
+   //     currentTileRow++)
+   //{
+   //   delete[] mpBattleMapArray[currentTileRow];
+   //}
+   //delete[] mpBattleMapArray;
  
    // Holds the string line that is currently be read in the file.
    std::string currentFileLineString(OverallProjectConstants::EMPTY_STRING);
@@ -420,13 +424,13 @@ void BattleMap::LoadMap(std::string theBattleMapFileName)
             mNumberOfTileRows = stoi(parsedString);
 
             // Create a new array with the column and row sizes for the 2D sizes.
-            mpBattleMapArray = new int* [mNumberOfTileRows];
-            for (int currentTileRow = 0;
-                 currentTileRow < mNumberOfTileRows;
-                 currentTileRow++)
-            {
-               mpBattleMapArray[currentTileRow] = new int [mNumberOfTileColumns];
-            }
+            //mpBattleMapArray = new int* [mNumberOfTileRows];
+            //for (int currentTileRow = 0;
+            //     currentTileRow < mNumberOfTileRows;
+            //     currentTileRow++)
+            //{
+            //   mpBattleMapArray[currentTileRow] = new int [mNumberOfTileColumns];
+            //}
          }
          // Retrieve the map tile information including column and row location and add the data to the battle map container.
          // The current line being read in the file minues the offset is the current row of the battle map.
@@ -440,7 +444,12 @@ void BattleMap::LoadMap(std::string theBattleMapFileName)
                std::getline(stringStream,
                             parsedString,
                             BattleMapConstants::FILE_DELIMITER);
-               mpBattleMapArray[currentLineNumber - currentLineNumber][currentTileColumn] = stoi(parsedString);
+               TileNode* newNode = new TileNode();
+               newNode->Column = currentTileColumn;
+               newNode->Row = currentLineNumber - currentLineNumber;
+               newNode->DistanceFromCurrentShip = -1;
+               mBattleMapVector.push_back(newNode);
+               //mpBattleMapArray[currentLineNumber - currentLineNumber][currentTileColumn] = stoi(parsedString);
             }
          }
          
@@ -589,6 +598,9 @@ void BattleMap::CenterTileSelector()
 //***************************************************************************************************************************************************
 void BattleMap::CalculateShipsMoveableArea()
 {
+   int currentColumn = 0;
+   int currentRow = 0;
+
    // Stop any unecessary processing in finding which tiles are needed by knowing that there are areas already found in the Already Found areas
    // container. THe reasoning is becuase the Already Found container will be cleared once the ship moves, allowing processing for the next set of
    // areas to be found at the new ship location.
@@ -596,17 +608,22 @@ void BattleMap::CalculateShipsMoveableArea()
        (mMoveableTiles.empty() == true))
    {
       // Holds the list of tile locations to investigate from for more moveable spaces.
-      std::vector<std::pair<int, int>> investigateAreas;
+      std::vector<TileNode*>/*std::pair<int, int>>*/ investigateAreas;
       // List of new areas found from the investigate areas container.
-      std::vector<std::pair<int, int>> newInvestigateAreas;
+      std::vector<TileNode*>/*std::pair<int, int>>*/ newInvestigateAreas;
 
       // Add the ships location as the starting investigate area.
-      investigateAreas.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
-                                                mpCurrentShipsActionTurn->GetTileRow()));
+      TileNode* startingNode = new TileNode();
+      startingNode->Column = mpCurrentShipsActionTurn->GetTileColumn();
+      startingNode->Row = mpCurrentShipsActionTurn->GetTileRow();
+      startingNode->DistanceFromCurrentShip = 0;
+      investigateAreas.push_back(startingNode);//std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                                //mpCurrentShipsActionTurn->GetTileRow()));
 
       // Add the ships location as a tile where it can move to.
-      mMoveableTiles.push_back(std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
-                                              mpCurrentShipsActionTurn->GetTileRow()));
+      
+      mMoveableTiles.push_back(startingNode);//std::make_pair(mpCurrentShipsActionTurn->GetTileColumn(),
+                                            //  mpCurrentShipsActionTurn->GetTileRow()));
 
       // For as many movement spaces that are left, check which tiles are needed in the moveable tile container for the tiles the ship can traverse
       // to.
@@ -622,59 +639,88 @@ void BattleMap::CalculateShipsMoveableArea()
               currentInvestigateArea++)
          {
             // Check the tile above of the investigate tile.
-            auto foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                                       mMoveableTiles.end(),
-                                                       std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                                      (currentInvestigateArea)->second));
+            currentColumn = (*currentInvestigateArea)->Column;
+            currentRow = (*currentInvestigateArea)->Row - BattleMapConstants::ONE_TILE_DIFFERENCE;
+            auto foundMoveableTileIterator = std::find_if(mMoveableTiles.begin(),
+                                                          mMoveableTiles.end(),
+                                                          [currentColumn, currentRow](const TileNode* d){return d->Column == currentColumn && d->Row == currentRow;});
             if (foundMoveableTileIterator == mMoveableTiles.end() &&
-                IsTileOccupied((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE, (currentInvestigateArea)->second) == false)
+                IsTileOccupied((*currentInvestigateArea)->Column, (*currentInvestigateArea)->Row - BattleMapConstants::ONE_TILE_DIFFERENCE) == false)
             {
-               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                       (currentInvestigateArea)->second));
-               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                            (currentInvestigateArea)->second));
+               TileNode* ValidNode = new TileNode();
+               ValidNode->Column = currentColumn;
+               ValidNode->Row = currentRow;
+               ValidNode->DistanceFromCurrentShip = currentMovementDistance + 1;
+               mMoveableTiles.push_back(ValidNode);
+               newInvestigateAreas.push_back(ValidNode);
+               //mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+               //                                        (currentInvestigateArea)->second));
+               //newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first - BattleMapConstants::ONE_TILE_DIFFERENCE,
+               //                                             (currentInvestigateArea)->second));
             }
 
+            
             // Check the tile below of the investigate tile.
-            foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                                  mMoveableTiles.end(),
-                                                  std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                                 (currentInvestigateArea)->second));
+            currentColumn = (*currentInvestigateArea)->Column;
+            currentRow = (*currentInvestigateArea)->Row + BattleMapConstants::ONE_TILE_DIFFERENCE;
+            foundMoveableTileIterator = std::find_if(mMoveableTiles.begin(),
+                                                     mMoveableTiles.end(),
+                                                     [currentColumn, currentRow](const TileNode* d){return d->Column == currentColumn && d->Row == currentRow;});
             if (foundMoveableTileIterator == mMoveableTiles.end() &&
-                IsTileOccupied((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE, (currentInvestigateArea)->second) == false)
+                IsTileOccupied((*currentInvestigateArea)->Column, (*currentInvestigateArea)->Row + BattleMapConstants::ONE_TILE_DIFFERENCE) == false)
             {
-               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                       (currentInvestigateArea)->second));
-               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
-                                                            (currentInvestigateArea)->second));
+               TileNode* ValidNode = new TileNode();
+               ValidNode->Column = currentColumn;
+               ValidNode->Row = currentRow;
+               ValidNode->DistanceFromCurrentShip = currentMovementDistance + 1;
+               mMoveableTiles.push_back(ValidNode);
+               newInvestigateAreas.push_back(ValidNode);
+               //mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+               //                                        (currentInvestigateArea)->second));
+               //newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first + BattleMapConstants::ONE_TILE_DIFFERENCE,
+               //                                             (currentInvestigateArea)->second));
             }
 
             // Check the tile to the left of the investigate tile.
-            foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                                  mMoveableTiles.end(),
-                                                  std::make_pair((currentInvestigateArea)->first,
-                                                                 (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+            currentColumn = (*currentInvestigateArea)->Column - BattleMapConstants::ONE_TILE_DIFFERENCE;
+            currentRow = (*currentInvestigateArea)->Row;
+            foundMoveableTileIterator = std::find_if(mMoveableTiles.begin(),
+                                                     mMoveableTiles.end(),
+                                                     [currentColumn, currentRow](const TileNode* d){return d->Column == currentColumn && d->Row == currentRow;});
             if (foundMoveableTileIterator == mMoveableTiles.end() &&
-                IsTileOccupied((currentInvestigateArea)->first, (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE) == false)
+                IsTileOccupied((*currentInvestigateArea)->Column - BattleMapConstants::ONE_TILE_DIFFERENCE, (*currentInvestigateArea)->Row) == false)
             {
-               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
-                                                       (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
-               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
-                                                            (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+               TileNode* ValidNode = new TileNode();
+               ValidNode->Column = currentColumn;
+               ValidNode->Row = currentRow;
+               ValidNode->DistanceFromCurrentShip = currentMovementDistance + 1;
+               mMoveableTiles.push_back(ValidNode);
+               newInvestigateAreas.push_back(ValidNode);
+               //mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
+               //                                        (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
+               //newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+               //                                             (currentInvestigateArea)->second - BattleMapConstants::ONE_TILE_DIFFERENCE));
             }
 
             // Check the tile to the right of the investigate tile.
-            foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                                  mMoveableTiles.end(),
-                                                  std::make_pair((currentInvestigateArea)->first,
-                                                                 (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+            currentColumn = (*currentInvestigateArea)->Column + BattleMapConstants::ONE_TILE_DIFFERENCE;
+            currentRow = (*currentInvestigateArea)->Row;
+            foundMoveableTileIterator = std::find_if(mMoveableTiles.begin(),
+                                                     mMoveableTiles.end(),
+                                                     [currentColumn, currentRow](const TileNode* d){return d->Column == currentColumn && d->Row == currentRow;});
             if (foundMoveableTileIterator == mMoveableTiles.end() &&
-                IsTileOccupied((currentInvestigateArea)->first, (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE) == false)
+                IsTileOccupied((*currentInvestigateArea)->Column + BattleMapConstants::ONE_TILE_DIFFERENCE, (*currentInvestigateArea)->Row) == false)
             {
-               mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
-                                                       (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
-               newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
-                                                            (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+               TileNode* ValidNode = new TileNode();
+               ValidNode->Column = currentColumn;
+               ValidNode->Row = currentRow;
+               ValidNode->DistanceFromCurrentShip = currentMovementDistance + 1;
+               mMoveableTiles.push_back(ValidNode);
+               newInvestigateAreas.push_back(ValidNode);
+               //mMoveableTiles.push_back(std::make_pair((currentInvestigateArea)->first,
+               //                                        (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
+               //newInvestigateAreas.push_back(std::make_pair((currentInvestigateArea)->first,
+               //                                             (currentInvestigateArea)->second + BattleMapConstants::ONE_TILE_DIFFERENCE));
             }
          }
 
@@ -923,6 +969,71 @@ void BattleMap::CalculateShipsAttackableArea()
    }
 }
 
+void BattleMap::CalculateMovementPath(TileNode* theEndTile)
+{
+   TileNode* lookedAtTile = theEndTile;
+   mMovementPath.insert(mMovementPath.begin(), lookedAtTile);
+
+   for(int Count = theEndTile->DistanceFromCurrentShip; Count > 0; Count--)
+   {
+      // Check tile above.
+      int column = lookedAtTile->Column;
+      int row = lookedAtTile->Row - 1;
+      auto foundValidTile = std::find_if(mMoveableTiles.begin(),
+                                         mMoveableTiles.end(),
+                                         [column, row](const TileNode* d){return d->Row == row && d->Column == column;});
+      if(foundValidTile != mMoveableTiles.end() &&
+         (*foundValidTile)->DistanceFromCurrentShip == (lookedAtTile->DistanceFromCurrentShip - 1))
+      {
+         lookedAtTile = *foundValidTile;
+         mMovementPath.insert(mMovementPath.begin(), *foundValidTile);
+         continue;
+      }
+
+      // Check tile left.
+      column = lookedAtTile->Column - 1;
+      row = lookedAtTile->Row;
+      foundValidTile = std::find_if(mMoveableTiles.begin(),
+                                    mMoveableTiles.end(),
+                                    [column, row](const TileNode* d){return d->Row == row && d->Column == column;});
+      if(foundValidTile != mMoveableTiles.end() &&
+         (*foundValidTile)->DistanceFromCurrentShip == (lookedAtTile->DistanceFromCurrentShip - 1))
+      {
+         lookedAtTile = *foundValidTile;
+         mMovementPath.insert(mMovementPath.begin(), *foundValidTile);
+         continue;
+      }
+
+      // Check tile below.
+      column = lookedAtTile->Column;
+      row = lookedAtTile->Row + 1;
+      foundValidTile = std::find_if(mMoveableTiles.begin(),
+                                    mMoveableTiles.end(),
+                                    [column, row](const TileNode* d){return d->Row == row && d->Column == column;});
+      if(foundValidTile != mMoveableTiles.end() &&
+         (*foundValidTile)->DistanceFromCurrentShip == (lookedAtTile->DistanceFromCurrentShip - 1))
+      {
+         lookedAtTile = *foundValidTile;
+         mMovementPath.insert(mMovementPath.begin(), *foundValidTile);
+         continue;
+      }
+
+      // Check tile right.
+      column = lookedAtTile->Column + 1;
+      row = lookedAtTile->Row;
+      foundValidTile = std::find_if(mMoveableTiles.begin(),
+                                    mMoveableTiles.end(),
+                                    [column, row](const TileNode* d){return d->Row == row && d->Column == column;});
+      if(foundValidTile != mMoveableTiles.end() &&
+         (*foundValidTile)->DistanceFromCurrentShip == (lookedAtTile->DistanceFromCurrentShip - 1))
+      {
+         lookedAtTile = *foundValidTile;
+         mMovementPath.insert(mMovementPath.begin(), *foundValidTile);
+         continue;
+      }
+   }
+}
+
 //***************************************************************************************************************************************************
 //
 // Method Name: MoveShipToSelectedTile
@@ -935,24 +1046,28 @@ bool BattleMap::MoveShipToSelectedTile()
 {
    bool successfulMove = false;
 
+   int column = mTileSelectorColumn;
+   int row = mTileSelectorRow;
+
    // Check if the selected are the tile selector is at is within the bounds of moveable tiles.
-   auto foundMoveableTileIterator = std::find(mMoveableTiles.begin(),
-                                              mMoveableTiles.end(),
-                                              std::make_pair(mTileSelectorColumn,
-                                                             mTileSelectorRow));
+   auto foundMoveableTileIterator = std::find_if(mMoveableTiles.begin(),
+                                                 mMoveableTiles.end(),
+                                                 [column, row](const TileNode* d){return d->Column == column && d->Row == row;});
    if(foundMoveableTileIterator != mMoveableTiles.end())
    {
+      CalculateMovementPath(*foundMoveableTileIterator);
+
       // The tile selector selected a valid moveable tile so the ship is moved to where the tile selector is.
-      mpCurrentShipsActionTurn->SetTileColumn(mTileSelectorColumn);
-      mpCurrentShipsActionTurn->SetTileRow(mTileSelectorRow);
+      //mpCurrentShipsActionTurn->SetTileColumn(mTileSelectorColumn);
+      //mpCurrentShipsActionTurn->SetTileRow(mTileSelectorRow);
 
       // Clear the moveable tiles container as this will need to be updated as new movement needs to be calculated.
-      mMoveableTiles.clear();
+      //mMoveableTiles.clear();
 
       // TODO: Remove when necessary post testing.
-      mAttackableTiles.clear();
+      //mAttackableTiles.clear();
 
-      mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->GetTileColumn() * 64, mpCurrentShipsActionTurn->GetTileRow() * 64);
+      //mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->GetTileColumn() * 64, mpCurrentShipsActionTurn->GetTileRow() * 64);
 
       // Indicate that the move was successful.
       successfulMove = true;
@@ -1134,6 +1249,52 @@ void BattleMap::Update(float theElapsedTime)
 {
    mpBattleMenu->Update(theElapsedTime);
    mpTileSelectorImage->Update(theElapsedTime);
+
+   if(mCurrentBattleState == BattleState::MOVE_ANIMATION)
+   {
+      mElapsedTime += theElapsedTime;
+
+      if (mElapsedTime > mMoveTime)
+      {
+         if(mpCurrentShipsActionTurn->GetTileColumn() < mMovementPath.front()->Column)
+         {
+            mpCurrentShipsActionTurn->SetTileColumn(mpCurrentShipsActionTurn->GetTileColumn() + 1);
+         }
+         else if(mpCurrentShipsActionTurn->GetTileColumn() > mMovementPath.front()->Column)
+         {
+            mpCurrentShipsActionTurn->SetTileColumn(mpCurrentShipsActionTurn->GetTileColumn() - 1);
+         }
+         else if(mpCurrentShipsActionTurn->GetTileRow() < mMovementPath.front()->Row)
+         {
+            mpCurrentShipsActionTurn->SetTileRow(mpCurrentShipsActionTurn->GetTileRow() + 1);
+         }
+         else if(mpCurrentShipsActionTurn->GetTileRow() > mMovementPath.front()->Row)
+         {
+            mpCurrentShipsActionTurn->SetTileRow(mpCurrentShipsActionTurn->GetTileRow() - 1);
+         }
+         
+         mMovementPath.erase(mMovementPath.begin());
+         
+         if (mMovementPath.empty() == true)
+         {
+            // Free memory used.
+            for(auto Iterator = mMoveableTiles.begin();
+                Iterator != mMoveableTiles.end();
+                Iterator++)
+            {
+               delete *Iterator;
+            }
+            mMoveableTiles.clear();
+            mAttackableTiles.clear();
+
+            mpBattleMenu->SetMenuLocation(mpCurrentShipsActionTurn->GetTileColumn() * 64, mpCurrentShipsActionTurn->GetTileRow() * 64);
+
+            mCurrentBattleState = BattleState::MENU_MAIN;
+         }
+
+         mElapsedTime = 0.0f;
+      }
+   }
 }
 
 bool BattleMap::IsTileOccupied(int theColumn, int theRow)
@@ -1283,8 +1444,8 @@ void BattleMap::DrawShipsMoveableArea()
         currentMoveableTileIterator++)
    {
       al_draw_bitmap(pMoveableTile,
-                     currentMoveableTileIterator->first * OverallProjectConstants::TILE_WIDTH,
-                     currentMoveableTileIterator->second * OverallProjectConstants::TILE_HEIGHT,
+                     (*currentMoveableTileIterator)->Column * OverallProjectConstants::TILE_WIDTH,
+                     (*currentMoveableTileIterator)->Row * OverallProjectConstants::TILE_HEIGHT,
                      BattleMapConstants::DRAW_BITMAP_NO_FLAG);
    }
 
