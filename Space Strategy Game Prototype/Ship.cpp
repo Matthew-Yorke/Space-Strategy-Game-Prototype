@@ -61,8 +61,8 @@ Ship::Ship(Graphics& theGraphics, bool theIsManuverable, int theMovementDistance
    //mLargeWeapons = new LargeWeapons[theNumberOfLargeWeapons];
 
    // Temp Code Below
-   mShipTileColumn = 4;
-   mShipTileRow = 4;
+   mShipTileColumn = 4 * 64;
+   mShipTileRow = 4 * 64;
 
    mActionSpeed = 5;
    mActionLevel = 0;
@@ -73,6 +73,8 @@ Ship::Ship(Graphics& theGraphics, bool theIsManuverable, int theMovementDistance
    mpWeapon = nullptr;
 
    mCurrentHealth = 30;
+
+   mCurrentDirection = DIRECTION::UP;
 }
 
 //************************************************************************************************************************************************
@@ -269,11 +271,11 @@ int Ship::GetWeaponDamage()
 void Ship::Draw(Graphics& theGraphics)
 {
    mpShipImage->Draw(theGraphics,
-                     mShipTileColumn * OverallProjectConstants::TILE_WIDTH,
-                     mShipTileRow * OverallProjectConstants::TILE_HEIGHT);
+                     mShipTileColumn,
+                     mShipTileRow);
    mpWeapon->Draw(theGraphics,
-                  mShipTileColumn * OverallProjectConstants::TILE_WIDTH,
-                  mShipTileRow * OverallProjectConstants::TILE_HEIGHT);
+                  mShipTileColumn,
+                  mShipTileRow);
 }
 
 int Ship::GetCurrentHealth()

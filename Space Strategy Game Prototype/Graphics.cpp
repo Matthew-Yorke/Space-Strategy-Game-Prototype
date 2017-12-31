@@ -58,18 +58,43 @@ Graphics::~Graphics()
 //
 //***************************************************************************************************************************************************
 void Graphics::Draw(ALLEGRO_BITMAP* thepSource, int theStartPositionX, int theStartPositionY, int theWidth, int theHeight, int theDestinationX,
-                    int theDestinationY)
+                    int theDestinationY, float theAngle)
 {
+   ALLEGRO_BITMAP* rotated = NULL;
+   rotated = al_create_bitmap(theWidth, theHeight);
+   al_set_target_bitmap(rotated);
+   al_clear_to_color(al_map_rgb(0,0,0));
+
    al_convert_mask_to_alpha(thepSource, al_map_rgb(255, 0, 255));
+
+   //al_draw_bitmap_region(thepSource,
+   //                      theStartPositionX,
+   //                      theStartPositionY,
+   //                      theWidth,
+   //                      theHeight,
+   //                      theDestinationX,
+   //                      theDestinationY,
+   //                      0);
 
    al_draw_bitmap_region(thepSource,
                          theStartPositionX,
                          theStartPositionY,
                          theWidth,
                          theHeight,
-                         theDestinationX,
-                         theDestinationY,
+                         0,
+                         0,
                          0);
+
+    al_convert_mask_to_alpha(rotated, al_map_rgb(0,0,0));
+    al_set_target_bitmap(al_get_backbuffer(mpDisplay));
+    al_draw_rotated_bitmap(rotated,
+                   al_get_bitmap_width(rotated)/2,
+                   al_get_bitmap_height(rotated)/2,
+                   theDestinationX + al_get_bitmap_width(rotated)/2,
+                   theDestinationY + al_get_bitmap_height(rotated)/2,
+                   theAngle,
+                   0);
+    al_destroy_bitmap(rotated);
 }
 
 //***************************************************************************************************************************************************
@@ -108,7 +133,7 @@ ALLEGRO_BITMAP* Graphics::LoadImage(const std::string& theFilePath)
 // Start Private Method Definitions
 //***************************************************************************************************************************************************
 
-// Note: There are no provate methods in this class.
+// Note: There are no private methods in this class.
 
 //***************************************************************************************************************************************************
 // End Private Method Definitions

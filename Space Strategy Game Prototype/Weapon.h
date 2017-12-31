@@ -96,6 +96,8 @@ public:
 
    void Draw(Graphics& theGraphics, int theColumn, int theRow);
 
+   inline void SetAngle(float theAngle) {mpImage->SetAngle(theAngle);};
+
 protected:
 
    // There are currently no protected methods for this class.

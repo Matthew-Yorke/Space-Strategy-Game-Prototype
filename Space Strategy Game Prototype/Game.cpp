@@ -186,14 +186,14 @@ void Game::GameLoop()
    BattleMap* bm = new BattleMap(graphics);
    bm->LoadMap("BattleMaps/PrototypeBattleMap.txt");
    Weapon* weapon = new Weapon(graphics, "Images/Weapon1.png", 2, 5, 5);
-   Ship* StarterShip = new Ship(graphics, false, 3, 2, 1, 1);
+   Ship* StarterShip = new Ship(graphics, false, 5, 2, 1, 1);
    StarterShip->AddWeapon(weapon);
    bm->AddPlayerShip(StarterShip);
    Weapon* weapon2 = new Weapon(graphics, "Images/Weapon2.png", 0, 3, 5);
    Ship* SecondShip = new Ship(graphics, false, 2, 2, 1, 1);
    SecondShip->AddWeapon(weapon2);
-   SecondShip->SetTileRow(5);
-   SecondShip->SetTileColumn(5);
+   SecondShip->SetTileRow(5 * 64);
+   SecondShip->SetTileColumn(5 * 64);
    bm->AddPlayerShip(SecondShip);
    bool redraw = false;
    float lastUpdateTime = static_cast<float>(al_current_time());

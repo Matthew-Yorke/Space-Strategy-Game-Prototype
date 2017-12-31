@@ -19,6 +19,8 @@
 #include "Sprite.h"
 #include "Weapon.h"
 
+enum DIRECTION {UP, DOWN, LEFT, RIGHT};
+
 class Ship
 {
    //************************************************************************************************************************************************
@@ -285,6 +287,14 @@ public:
 
    void TakeDamage(int theDamage);
 
+   inline DIRECTION GetDirection() {return mCurrentDirection;};
+
+   inline void SetDirection(DIRECTION theDirection) {mCurrentDirection = theDirection;}; 
+
+   inline void SetAngle(float theAngle) {mpShipImage->SetAngle(theAngle); mpWeapon->SetAngle(theAngle);};
+
+   inline float GetAngle() {return mpShipImage->GetAngle();};
+
 protected:
 
 private:
@@ -364,6 +374,8 @@ private:
    int mShipTileRow;
 
    int mCurrentHealth;
+   
+   DIRECTION mCurrentDirection;
 
    //************************************************************************************************************************************************
    // End Member Vairable Declarations

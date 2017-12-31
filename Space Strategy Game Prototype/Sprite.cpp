@@ -34,6 +34,7 @@ Sprite::Sprite(Graphics& theGraphics, const std::string theFilePath, int theSour
    mSourceY = theSourceY;
    mWidth = theWidth;
    mHeight = theHeight;
+   mAngle = 0.0F;
 }
 
 //***************************************************************************************************************************************************
@@ -64,7 +65,8 @@ void Sprite::Draw(Graphics& theGraphics, int theDestinationX, int theDestination
                     mWidth,
                     mHeight,
                     theDestinationX,
-                    theDestinationY);
+                    theDestinationY,
+                    mAngle);
 }
 
 //***************************************************************************************************************************************************
@@ -75,7 +77,10 @@ void Sprite::Draw(Graphics& theGraphics, int theDestinationX, int theDestination
 // Start Protected Method Definitions
 //***************************************************************************************************************************************************
 
-// Note: There are no protected methods in this class.
+void Sprite::SetAngle(float theAngle)
+{
+   mAngle = theAngle;
+}
 
 //***************************************************************************************************************************************************
 // End Protected Method Definitions

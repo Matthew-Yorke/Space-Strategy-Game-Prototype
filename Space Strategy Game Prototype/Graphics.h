@@ -80,7 +80,7 @@ public:
    //
    //************************************************************************************************************************************************
    void Draw(ALLEGRO_BITMAP* thepSource, int theStartPositionX, int theStartPositionY, int theWidth, int theHeight, int theDestinationX,
-             int theDestinationY);
+             int theDestinationY, float theAngle);
 
    //************************************************************************************************************************************************
    //
@@ -100,7 +100,7 @@ public:
 
 protected:
 
-   // There are currently no protected methods for this class.
+   void SetAngleInRadians(float theAngle);
 
 private:
 

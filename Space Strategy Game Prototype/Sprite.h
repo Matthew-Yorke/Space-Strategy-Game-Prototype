@@ -96,9 +96,13 @@ public:
    //************************************************************************************************************************************************
    virtual void Update(float theElapsedTime) {};
 
+   virtual void SetAngle(float theAngle);
+
+   inline float GetAngle() {return mAngle;};
+
 protected:
 
-   // There are currently no protected methods for this class.
+   
 
 private:
 
@@ -125,6 +129,8 @@ protected:
    int mSourceY;
 
    int mWidth;
+
+   float mAngle;
 
 private:
 
