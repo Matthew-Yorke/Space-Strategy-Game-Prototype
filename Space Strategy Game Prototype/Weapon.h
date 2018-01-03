@@ -44,7 +44,8 @@ public:
    //  N/A
    //
    //************************************************************************************************************************************************
-   Weapon(Graphics& theGraphics, std::string theImageFileName, int theMinimumRange, int theMaximumRange, int theDamage);
+   Weapon(Graphics& theGraphics, std::string theImageFileName, int theMinimumRange, int theMaximumRange, int theDamage, int thePivotPointX,
+          int thePivotPointY, bool theRotateOnAttack, std::string theProjectileFilePath, int theProjectileWidth, int theProjectileHeight);
 
    //************************************************************************************************************************************************
    //
@@ -98,6 +99,22 @@ public:
 
    inline void SetAngle(float theAngle) {mpImage->SetAngle(theAngle);};
 
+   inline float GetAngle() {return mpImage->GetAngle();};
+
+   inline ALLEGRO_BITMAP* GetBitmap() {return mpImage->GetBitmap();};
+
+   inline int GetPivotPointX() {return mPivotPointX;};
+
+   inline int GetPivotPointY() {return mPivotPointY;};
+
+   inline bool GetRotateOnAttack() {return mRotateOnAttack;};
+
+   inline std::string GetProjectileFilePath() {return mProjectileFilePath;};
+
+   inline int GetProjectileWidth() {return mProjectileWidth;};
+
+   inline int GetProjectileHeight() {return mProjectileHeight;};
+
 protected:
 
    // There are currently no protected methods for this class.
@@ -131,6 +148,15 @@ private:
    int mDamage;
 
    Sprite* mpImage;
+
+   int mPivotPointX;
+   int mPivotPointY;
+
+   bool mRotateOnAttack;
+
+   std::string mProjectileFilePath;
+   int mProjectileWidth;
+   int mProjectileHeight;
 
    //************************************************************************************************************************************************
    // End Member Vairable Declarations

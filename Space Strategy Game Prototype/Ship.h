@@ -51,7 +51,7 @@ public:
    //
    //************************************************************************************************************************************************
    Ship(Graphics& theGraphics, bool theIsManuverable, int theMovementDistance, int theNumberOfSmallWeapons, int theNumberOfMediumWeapons,
-        int theNumberOfLargeWeapons);
+        int theNumberOfLargeWeapons, ALLEGRO_DISPLAY* theDisplay, int theWeaponPortX, int theWeaponPortY);
 
    //************************************************************************************************************************************************
    //
@@ -291,9 +291,20 @@ public:
 
    inline void SetDirection(DIRECTION theDirection) {mCurrentDirection = theDirection;}; 
 
-   inline void SetAngle(float theAngle) {mpShipImage->SetAngle(theAngle); mpWeapon->SetAngle(theAngle);};
+   inline void SetShipAngle(float theAngle) {mpShipImage->SetAngle(theAngle);};
 
-   inline float GetAngle() {return mpShipImage->GetAngle();};
+   inline float GetShipAngle() {return mpShipImage->GetAngle();};
+
+   inline void SetWeaponAngle(float theAngle) {mpWeapon->SetAngle(theAngle);};
+
+   inline float GetWeaponAngle() {return mpWeapon->GetAngle();};
+
+   inline int GetWeaponPortX() {return mWeaponPortX;};
+   inline int GetWeaponPortY() {return mWeaponPortY;};
+
+   inline bool GetRotateOnAttack() {return mpWeapon->GetRotateOnAttack();};
+
+   inline Weapon* GetWeaponData() {return mpWeapon;};
 
 protected:
 
@@ -376,6 +387,13 @@ private:
    int mCurrentHealth;
    
    DIRECTION mCurrentDirection;
+
+   ALLEGRO_DISPLAY* mpDisplay;
+
+   ALLEGRO_BITMAP* mpShipOnlyImage;
+
+   int mWeaponPortX;
+   int mWeaponPortY;
 
    //************************************************************************************************************************************************
    // End Member Vairable Declarations

@@ -41,7 +41,7 @@
 //  Set the member variables for this class to default values.
 //
 //***************************************************************************************************************************************************
-BattleMap::BattleMap(Graphics& theGraphics)
+BattleMap::BattleMap(Graphics& theGraphics, ALLEGRO_DISPLAY* theDisplay)
 {
    // Set the default number of tile columns and rows in the map.
    mNumberOfTileColumns = 0;
@@ -72,6 +72,11 @@ BattleMap::BattleMap(Graphics& theGraphics)
    mMoveTime = 1.0f / 60.0f;
    mElapsedTime = 0.0f;
    mTurningCount = 0;
+   mWeaponAngle = 0.0F;
+   mpGraphics = &theGraphics;
+   mAttackedTileX = 0;
+   mAttackedTileY = 0;
+   mpDisplay = theDisplay;
 }
 
 //***************************************************************************************************************************************************
@@ -317,7 +322,7 @@ void BattleMap::ActionKeyPressed()
 
          if(validMove == true)
          {
-            mCurrentBattleState = BattleState::MENU_MAIN;
+            mCurrentBattleState = BattleState::ATTACK_SETUP;
          }
 
          break;
@@ -1089,6 +1094,7 @@ bool BattleMap::MoveShipToSelectedTile()
 bool BattleMap::AttackSelectedTile()
 {
    bool successfulMove = false;
+   float angle = 0.0;
 
    // Check if the selected are the tile selector is at is within the bounds of moveable tiles.
    auto foundAttackableTileIterator = std::find(mAttackableTiles.begin(),
@@ -1097,53 +1103,90 @@ bool BattleMap::AttackSelectedTile()
                                                                mTileSelectorRow));
    if(foundAttackableTileIterator != mAttackableTiles.end())
    {
-      // Iterate through the list of player ships and draw them at the tile location the ship is indicated to be at.
-      for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end();)
-      {
-         if ((*ShipIterator)->GetTileColumn() / 64 == foundAttackableTileIterator->first &&
-             (*ShipIterator)->GetTileRow() / 64 == foundAttackableTileIterator->second)
-         {
-            (*ShipIterator)->TakeDamage(mpCurrentShipsActionTurn->GetWeaponDamage());
+         mAttackedTileX = (*foundAttackableTileIterator).first * 64;
+         mAttackedTileY = (*foundAttackableTileIterator).second * 64;
 
-            if ((*ShipIterator)->GetCurrentHealth() <= 0)
+         switch (mpCurrentShipsActionTurn->GetDirection())
+         {
+            case DIRECTION::UP:
             {
-               delete *ShipIterator;
-               ShipIterator = mpPlayerShips.erase(ShipIterator);
+               angle = atan2((((*foundAttackableTileIterator).second * 64) + 32) - (mpCurrentShipsActionTurn->GetTileRow() + 46),
+                             (((*foundAttackableTileIterator).first * 64) + 32) - (mpCurrentShipsActionTurn->GetTileColumn() + 32));
+               break;
             }
-            else
+            case DIRECTION::DOWN:
             {
-               ShipIterator++;
+               angle = atan2((((*foundAttackableTileIterator).second * 64) + 32) - (mpCurrentShipsActionTurn->GetTileRow() + 18),
+                             (((*foundAttackableTileIterator).first * 64) + 32) - (mpCurrentShipsActionTurn->GetTileColumn() + 32));
+               break;
+            }
+            case DIRECTION::LEFT:
+            {
+               angle = atan2((((*foundAttackableTileIterator).second * 64) + 32) - (mpCurrentShipsActionTurn->GetTileRow() + 32),
+                             (((*foundAttackableTileIterator).first * 64) + 32) - (mpCurrentShipsActionTurn->GetTileColumn() + 46));
+               break;
+            }
+            case DIRECTION::RIGHT:
+            {
+               angle = atan2((((*foundAttackableTileIterator).second * 64) + 32) - (mpCurrentShipsActionTurn->GetTileRow() + 32),
+                             (((*foundAttackableTileIterator).first * 64) + 32) - (mpCurrentShipsActionTurn->GetTileColumn() + 18));
+               break;
             }
          }
-         else
-         {
-            ShipIterator++;
-         }
-      }
-      
-      // Iterate through the list of enemy ships and draw them at the tile location the ship is indicated to be at.
-      for (auto ShipIterator = mpEnemyShips.begin(); ShipIterator != mpEnemyShips.end();)
-      {
-         if ((*ShipIterator)->GetTileColumn() / 64 == foundAttackableTileIterator->first &&
-             (*ShipIterator)->GetTileRow() / 64 == foundAttackableTileIterator->second)
-         {
-            (*ShipIterator)->TakeDamage(mpCurrentShipsActionTurn->GetWeaponDamage());
 
-            if ((*ShipIterator)->GetCurrentHealth() <= 0)
-            {
-               delete *ShipIterator;
-               ShipIterator = mpEnemyShips.erase(ShipIterator);
-            }
-            else
-            {
-               ShipIterator++;
-            }
-         }
-         else
-         {
-            ShipIterator++;
-         }
-      }
+         angle = (angle/3.14F*180) + (angle > 0 ? 0 : 360);
+
+         mWeaponAngle = angle + 90 % 360;
+
+         //mpCurrentShipsActionTurn->SetWeaponAngle((angle * (3.14F/180.0F)) - mpCurrentShipsActionTurn->GetShipAngle());
+
+      //// Iterate through the list of player ships and damage the on at the tile selected.
+      //for (auto ShipIterator = mpPlayerShips.begin(); ShipIterator != mpPlayerShips.end();)
+      //{
+      //   if ((*ShipIterator)->GetTileColumn() / 64 == foundAttackableTileIterator->first &&
+      //       (*ShipIterator)->GetTileRow() / 64 == foundAttackableTileIterator->second)
+      //   {
+      //      (*ShipIterator)->TakeDamage(mpCurrentShipsActionTurn->GetWeaponDamage());
+      //
+      //      if ((*ShipIterator)->GetCurrentHealth() <= 0)
+      //      {
+      //         delete *ShipIterator;
+      //         ShipIterator = mpPlayerShips.erase(ShipIterator);
+      //      }
+      //      else
+      //      {
+      //         ShipIterator++;
+      //      }
+      //   }
+      //   else
+      //   {
+      //      ShipIterator++;
+      //   }
+      //}
+      //
+      //// Iterate through the list of enemy ships and draw them at the tile location the ship is indicated to be at.
+      //for (auto ShipIterator = mpEnemyShips.begin(); ShipIterator != mpEnemyShips.end();)
+      //{
+      //   if ((*ShipIterator)->GetTileColumn() / 64 == foundAttackableTileIterator->first &&
+      //       (*ShipIterator)->GetTileRow() / 64 == foundAttackableTileIterator->second)
+      //   {
+      //      (*ShipIterator)->TakeDamage(mpCurrentShipsActionTurn->GetWeaponDamage());
+      //
+      //      if ((*ShipIterator)->GetCurrentHealth() <= 0)
+      //      {
+      //         delete *ShipIterator;
+      //         ShipIterator = mpEnemyShips.erase(ShipIterator);
+      //      }
+      //      else
+      //      {
+      //         ShipIterator++;
+      //      }
+      //   }
+      //   else
+      //   {
+      //      ShipIterator++;
+      //   }
+      //}
 
 
       // Clear the moveable tiles container as this will need to be updated as new movement needs to be calculated.
@@ -1254,6 +1297,8 @@ bool BattleMap::AreSame(double a, double b)
 //***************************************************************************************************************************************************
 void BattleMap::Update(float theElapsedTime)
 {
+   float weaponAngle = 0.0F;
+
    mpBattleMenu->Update(theElapsedTime);
    mpTileSelectorImage->Update(theElapsedTime);
 
@@ -1271,7 +1316,7 @@ void BattleMap::Update(float theElapsedTime)
                {
                   case DIRECTION::LEFT:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 36)
@@ -1283,7 +1328,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::UP:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() + (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() + (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1295,7 +1340,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::DOWN:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1323,7 +1368,7 @@ void BattleMap::Update(float theElapsedTime)
                {
                   case DIRECTION::RIGHT:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() + (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() + (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 36)
@@ -1335,7 +1380,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::UP:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1347,7 +1392,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::DOWN:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() + (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() + (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1375,7 +1420,7 @@ void BattleMap::Update(float theElapsedTime)
                {
                   case DIRECTION::UP:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 36)
@@ -1387,7 +1432,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::LEFT:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1399,7 +1444,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::RIGHT:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() + (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() + (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1427,7 +1472,7 @@ void BattleMap::Update(float theElapsedTime)
                {
                   case DIRECTION::DOWN:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 36)
@@ -1439,7 +1484,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::LEFT:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() + (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() + (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1451,7 +1496,7 @@ void BattleMap::Update(float theElapsedTime)
                   }
                   case DIRECTION::RIGHT:
                   {
-                     mpCurrentShipsActionTurn->SetAngle(mpCurrentShipsActionTurn->GetAngle() - (5.0f * (3.14f/180.0f)));
+                     mpCurrentShipsActionTurn->SetShipAngle(mpCurrentShipsActionTurn->GetShipAngle() - (5.0f * (3.14f/180.0f)));
                      mTurningCount++;
 
                      if(mTurningCount == 18)
@@ -1497,6 +1542,158 @@ void BattleMap::Update(float theElapsedTime)
          }
 
          mElapsedTime = 0.0f;
+      }
+   }
+   else if(mCurrentBattleState == BattleState::ATTACK_SETUP)
+   {
+      if(mpCurrentShipsActionTurn->GetRotateOnAttack() == true)
+      {
+         float curentWeaponAngle = mpCurrentShipsActionTurn->GetWeaponAngle() * (180.0F/3.14F);
+         if ((curentWeaponAngle >= (fmod((mWeaponAngle - 1.0F) - mpCurrentShipsActionTurn->GetShipAngle() * (180.0F/3.14F), 360.0F))) &&
+             (curentWeaponAngle <= (fmod((mWeaponAngle + 1.0F) - mpCurrentShipsActionTurn->GetShipAngle() * (180.0F/3.14F), 360.0F))))
+         {
+            switch (mpCurrentShipsActionTurn->GetDirection())
+            {
+               case DIRECTION::UP:
+               {
+                  mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                         mpCurrentShipsActionTurn->GetTileColumn() + 32,
+                                                         mpCurrentShipsActionTurn->GetTileRow() + 46,
+                                                         mpCurrentShipsActionTurn->GetWeaponAngle() + mpCurrentShipsActionTurn->GetShipAngle(),
+                                                         mpDisplay,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+                  break;
+               }
+               case DIRECTION::DOWN:
+               {
+                  mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                         mpCurrentShipsActionTurn->GetTileColumn() + 32,
+                                                         mpCurrentShipsActionTurn->GetTileRow() + 18,
+                                                         mpCurrentShipsActionTurn->GetWeaponAngle() + mpCurrentShipsActionTurn->GetShipAngle(),
+                                                         mpDisplay,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+                  break;
+               }
+               case DIRECTION::LEFT:
+               {
+                  mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                         mpCurrentShipsActionTurn->GetTileColumn() + 46,
+                                                         mpCurrentShipsActionTurn->GetTileRow() + 32,
+                                                         mpCurrentShipsActionTurn->GetWeaponAngle() + mpCurrentShipsActionTurn->GetShipAngle(),
+                                                         mpDisplay,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+                  break;
+               }
+               case DIRECTION::RIGHT:
+               {
+                  mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                         mpCurrentShipsActionTurn->GetTileColumn() + 18,
+                                                         mpCurrentShipsActionTurn->GetTileRow() + 32,
+                                                         mpCurrentShipsActionTurn->GetWeaponAngle() + mpCurrentShipsActionTurn->GetShipAngle(),
+                                                         mpDisplay,
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                         mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+                  break;
+               }
+            }
+
+            mCurrentBattleState = BattleState::ATTACK_ANIMATION;
+         }
+         else
+         {
+            curentWeaponAngle += 1.0F;
+            curentWeaponAngle = fmod(curentWeaponAngle, 360.0F);
+            
+            mpCurrentShipsActionTurn->SetWeaponAngle(curentWeaponAngle * (3.14F/180.0F));
+         }
+      }
+      else
+      {
+         switch (mpCurrentShipsActionTurn->GetDirection())
+         {
+            case DIRECTION::UP:
+            {
+               mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                      mpCurrentShipsActionTurn->GetTileColumn() + 32,
+                                                      mpCurrentShipsActionTurn->GetTileRow() + 46,
+                                                      mWeaponAngle * (3.14F/180.0F),
+                                                      mpDisplay,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+               break;
+            }
+            case DIRECTION::DOWN:
+            {
+               mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                      mpCurrentShipsActionTurn->GetTileColumn() + 32,
+                                                      mpCurrentShipsActionTurn->GetTileRow() + 18,
+                                                      mWeaponAngle * (3.14F/180.0F),
+                                                      mpDisplay,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+               break;
+            }
+            case DIRECTION::LEFT:
+            {
+               mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                      mpCurrentShipsActionTurn->GetTileColumn() + 46,
+                                                      mpCurrentShipsActionTurn->GetTileRow() + 32,
+                                                      mWeaponAngle * (3.14F/180.0F),
+                                                      mpDisplay,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+               break;
+            }
+            case DIRECTION::RIGHT:
+            {
+               mpProjectiles.push_back(new Projectile(*mpGraphics,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileFilePath(),
+                                                      mpCurrentShipsActionTurn->GetTileColumn() + 18,
+                                                      mpCurrentShipsActionTurn->GetTileRow() + 32,
+                                                      mWeaponAngle * (3.14F/180.0F),
+                                                      mpDisplay,
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileWidth(),
+                                                      mpCurrentShipsActionTurn->GetWeaponData()->GetProjectileHeight()));
+               break;
+            }
+         }
+
+         mCurrentBattleState = BattleState::ATTACK_ANIMATION;
+      }
+   }
+   else if(mCurrentBattleState == BattleState::ATTACK_ANIMATION)
+   {
+      for (auto ProjectileIterator = mpProjectiles.begin(); ProjectileIterator != mpProjectiles.end();)
+      {
+         (*ProjectileIterator)->Update();
+
+         if(((*ProjectileIterator)->GetCoordinateX() >= (mAttackedTileX + 16)) &&
+            ((*ProjectileIterator)->GetCoordinateX() <= (mAttackedTileX + 64 - 16)) &&
+            ((*ProjectileIterator)->GetCoordinateY() >= (mAttackedTileY + 16)) &&
+            ((*ProjectileIterator)->GetCoordinateY() <= (mAttackedTileY + 64 - 16)))
+         {
+            delete *ProjectileIterator;
+            ProjectileIterator = mpProjectiles.erase(ProjectileIterator);
+         }
+         else
+         {
+            ProjectileIterator++;
+         }
+      }
+
+      if (mpProjectiles.empty() == true)
+      {
+         mCurrentBattleState = BattleState::MENU_MAIN;
       }
    }
 }
@@ -1573,6 +1770,13 @@ void BattleMap::Draw(Graphics& theGraphics)
          DrawShipsAttackableArea();
          DrawShips(theGraphics);
          DrawTileSelector(theGraphics);
+         break;
+      }
+      case BattleState::ATTACK_ANIMATION:
+      {
+         DrawBattleMapTiles();
+         DrawShips(theGraphics);
+         DrawProjectiles(theGraphics);
          break;
       }
       default:
@@ -1728,6 +1932,14 @@ void BattleMap::DrawTileSelector(Graphics& theGraphics)
    mpTileSelectorImage->Draw(theGraphics,
                              mTileSelectorColumn * OverallProjectConstants::TILE_WIDTH,
                              mTileSelectorRow * OverallProjectConstants::TILE_HEIGHT);
+}
+
+void BattleMap::DrawProjectiles(Graphics& theGraphics)
+{
+   for (auto ProjectileIterator = mpProjectiles.begin(); ProjectileIterator != mpProjectiles.end(); ProjectileIterator++)
+   {
+      (*ProjectileIterator)->Draw(theGraphics);
+   }
 }
 
 //***************************************************************************************************************************************************

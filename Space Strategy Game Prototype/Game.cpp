@@ -183,14 +183,14 @@ void Game::GameLoop()
    Graphics graphics(mpDisplay);
 
    // Note: This is purely to test the map file for loading and drawing the map that is currently loaded.
-   BattleMap* bm = new BattleMap(graphics);
+   BattleMap* bm = new BattleMap(graphics, mpDisplay);
    bm->LoadMap("BattleMaps/PrototypeBattleMap.txt");
-   Weapon* weapon = new Weapon(graphics, "Images/Weapon1.png", 2, 5, 5);
-   Ship* StarterShip = new Ship(graphics, false, 5, 2, 1, 1);
+   Weapon* weapon = new Weapon(graphics, "Images/Weapon1.png", 2, 5, 5, 5, 12, true, "Images/Laser.png", 9, 15);
+   Ship* StarterShip = new Ship(graphics, false, 5, 2, 1, 1, mpDisplay, 32, 46);
    StarterShip->AddWeapon(weapon);
    bm->AddPlayerShip(StarterShip);
-   Weapon* weapon2 = new Weapon(graphics, "Images/Weapon2.png", 0, 3, 5);
-   Ship* SecondShip = new Ship(graphics, false, 2, 2, 1, 1);
+   Weapon* weapon2 = new Weapon(graphics, "Images/Weapon2.png", 0, 3, 5, 4, 4, false, "Images/Rocket.png", 9 , 23);
+   Ship* SecondShip = new Ship(graphics, false, 2, 2, 1, 1, mpDisplay, 32, 46);
    SecondShip->AddWeapon(weapon2);
    SecondShip->SetTileRow(5 * 64);
    SecondShip->SetTileColumn(5 * 64);

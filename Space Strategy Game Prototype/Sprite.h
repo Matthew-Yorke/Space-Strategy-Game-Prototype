@@ -100,6 +100,8 @@ public:
 
    inline float GetAngle() {return mAngle;};
 
+   inline ALLEGRO_BITMAP* GetBitmap() {return mpSpriteSheet;};
+
 protected:
 
    

@@ -26,12 +26,19 @@
 //  Set the member variables for this class to default values.
 //
 //***************************************************************************************************************************************************
-Weapon::Weapon(Graphics& theGraphics, std::string theImageFileName, int theMinimumRange, int theMaximumRange, int theDamage)
+Weapon::Weapon(Graphics& theGraphics, std::string theImageFileName, int theMinimumRange, int theMaximumRange, int theDamage, int thePivotPointX,
+               int thePivotPointY, bool theRotateOnAttack, std::string theProjectileFilePath, int theProjectileWidth, int theProjectileHeight)
 {
    mpImage = new Sprite(theGraphics, theImageFileName, 0, 0, 64, 64);
    mMinimumRange = theMinimumRange;
    mMaximumRange = theMaximumRange;
    mDamage = theDamage;
+   mPivotPointX = thePivotPointX;
+   mPivotPointY = thePivotPointY;
+   mRotateOnAttack = theRotateOnAttack;
+   mProjectileFilePath = theProjectileFilePath;
+   mProjectileWidth = theProjectileWidth;
+   mProjectileHeight = theProjectileHeight;
 }
 
 //************************************************************************************************************************************************

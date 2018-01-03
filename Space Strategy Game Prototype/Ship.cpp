@@ -36,7 +36,7 @@
 //
 //************************************************************************************************************************************************
 Ship::Ship(Graphics& theGraphics, bool theIsManuverable, int theMovementDistance, int theNumberOfSmallWeapons, int theNumberOfMediumWeapons,
-           int theNumberOfLargeWeapons)
+           int theNumberOfLargeWeapons, ALLEGRO_DISPLAY* theDisplay, int theWeaponPortX, int theWeaponPortY)
 {
    // Set if the ship is manuverable with the passed in value.
    mIsManuverable = theIsManuverable;
@@ -54,6 +54,8 @@ Ship::Ship(Graphics& theGraphics, bool theIsManuverable, int theMovementDistance
                             0,
                             64,
                             64);
+
+   mpShipOnlyImage = al_load_bitmap("Images/Spaceship_1.png");
 
    // Set the array size.
    //mSmallWeapons = new SmallWeapons[theNumberOfSmallWeapons];
@@ -75,6 +77,11 @@ Ship::Ship(Graphics& theGraphics, bool theIsManuverable, int theMovementDistance
    mCurrentHealth = 30;
 
    mCurrentDirection = DIRECTION::UP;
+
+   mpDisplay = theDisplay;
+
+   mWeaponPortX = theWeaponPortX;
+   mWeaponPortY = theWeaponPortY;
 }
 
 //************************************************************************************************************************************************
@@ -270,12 +277,66 @@ int Ship::GetWeaponDamage()
 //************************************************************************************************************************************************
 void Ship::Draw(Graphics& theGraphics)
 {
+   // Temporary to build ship and weapon attachments
+   ALLEGRO_BITMAP* ShipBuilder = nullptr;
+   ShipBuilder = al_create_bitmap(64, 64);
+
+   // Set to draw on temporary canvas
+   al_set_target_bitmap(ShipBuilder);
+   
+   // Clear canvas to be all black
+   al_clear_to_color(al_map_rgb(0,0,0));
+
+   // Draw the ship first using the image of only the ship.
+   al_draw_bitmap_region(mpShipOnlyImage,
+                         0,
+                         0,
+                         64,
+                         64,
+                         0,
+                         0,
+                         0);
+
+   // Mask the weapon pink color.
+   al_convert_mask_to_alpha(mpWeapon->GetBitmap(), al_map_rgb(255, 0, 255));
+
+   // Draw weapon ontop of the ship.
+   al_draw_rotated_bitmap(mpWeapon->GetBitmap(),
+                          mpWeapon->GetPivotPointX(),
+                          mpWeapon->GetPivotPointY(),
+                          mWeaponPortX,
+                          mWeaponPortY,
+                          mpWeapon->GetAngle(),
+                          0);
+
+   // Target to draw on the ship canvas
+   al_set_target_bitmap(mpShipImage->GetBitmap());
+
+   // Set the canvas to be black
+   al_clear_to_color(al_map_rgb(0,0,0));
+   
+   // draw the temporary built ship image as the final image for the bitmap.
+   al_draw_bitmap_region(ShipBuilder,
+                         0,
+                         0,
+                         64,
+                         64,
+                         0,
+                         0,
+                         0);
+
+   // retarget the main display.
+   al_set_target_bitmap(al_get_backbuffer(mpDisplay));
+
+   // Draw the entire ship to the display.
    mpShipImage->Draw(theGraphics,
                      mShipTileColumn,
                      mShipTileRow);
-   mpWeapon->Draw(theGraphics,
-                  mShipTileColumn,
-                  mShipTileRow);
+   //mpWeapon->Draw(theGraphics,
+   //               mShipTileColumn,
+   //               mShipTileRow);
+
+   al_destroy_bitmap(ShipBuilder);
 }
 
 int Ship::GetCurrentHealth()

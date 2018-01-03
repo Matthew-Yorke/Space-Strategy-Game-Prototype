@@ -20,6 +20,7 @@
 #include "Ship.h"
 #include "OverallProjectConstants.h"
 #include "BattleMenu.h"
+#include "Projectile.h"
 
 struct TileNode
 {
@@ -50,7 +51,7 @@ public:
    //  N/A
    //
    //************************************************************************************************************************************************
-   BattleMap(Graphics& theGraphics);
+   BattleMap(Graphics& theGraphics, ALLEGRO_DISPLAY* theDisplay);
 
    //************************************************************************************************************************************************
    //
@@ -459,6 +460,8 @@ public:
    //************************************************************************************************************************************************
    void DrawTileSelector(Graphics& theGraphics);
 
+   void DrawProjectiles(Graphics& theGraphics);
+
 protected:
 
    // There are currently no protected methods for this class.
@@ -490,7 +493,7 @@ private:
    // MENU_MAIN - Used to determine the player is currently selecting from the menu's main window.
    // MOVE - Used to determine where the player can move a ship.
    // ATTACK - Used to determine the player is selecting an attack area.
-   enum BattleState { DETERMINING, MENU_MAIN, MOVE, ATTACK, MOVE_ANIMATION};
+   enum BattleState { DETERMINING, MENU_MAIN, MOVE, ATTACK, MOVE_ANIMATION, ATTACK_SETUP, ATTACK_ANIMATION};
 
    // A dynamic 2-Dimensional array the holds tile information for each tile in the battle map. This is created upon a read of a battle map file and
    // deleted upon class destruction or before reading a new battle map file.
@@ -540,6 +543,17 @@ private:
    AnimatedSprite* mpTileSelectorImage;
 
    int mTurningCount;
+
+   float mWeaponAngle;
+
+   std::vector<Projectile*> mpProjectiles;
+
+   Graphics* mpGraphics;
+
+   int mAttackedTileX;
+   int mAttackedTileY;
+
+   ALLEGRO_DISPLAY* mpDisplay;
 
    //************************************************************************************************************************************************
    // End Member Vairable Declarations
